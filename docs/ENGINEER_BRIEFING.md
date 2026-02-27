@@ -1,181 +1,64 @@
-# Engineer Briefing — Relay Engine
+# Relay Engine — Hackathon Briefing
 
-Read time: 5 minutes. This gets you up to speed on what we're building, what's done, what you need to build, and how the codebase works.
+## The idea
 
----
+Non-technical users report bugs and request features with massive context loss. By the time it reaches eng, it's been telephone-gamed through Slack and tickets. The user may not even remember what led to the issue.
 
-## What is this?
+**Relay Engine** is a floating AI agent inside any web app. User hits a problem, the agent already knows what they did (PostHog events), can read the source code and business rules, asks clarifying questions, then classifies the issue as Bug / Edge Case / UX Issue. Zero information loss, zero eng back-and-forth.
 
-**Relay Engine** is a floating AI support agent that lives inside any web app. When a user hits a problem, the agent:
+Think: an agentic 24/7 CSM that genuinely understands the technical side.
 
-1. Knows what the user did (pulls their event history from PostHog)
-2. Investigates the codebase (reads source code + business rules docs)
-3. Asks smart follow-up questions (conversational, empathetic, not robotic)
-4. Classifies the issue as **Bug**, **Edge Case**, or **UX Issue**
-5. Delivers a structured report to engineers with zero information loss
+## What's done
 
-We're demoing this at an **OpenAI hackathon**. The demo app is a fake e-commerce store called "HONE" with two intentionally broken flows. The Relay Engine widget is the product we're showing off.
+I prepped all the frontend — a fake e-commerce store ("HONE") with two intentionally broken flows, and the full widget UI with glassmorphic chat panel, animations, element selection. Everything builds and runs. **No backend agent logic exists yet — that's our work tomorrow.**
 
-## The demo flow (3 min pitch)
+## Stack
 
-1. User browses HONE store, tries to update an order status, gets a cryptic error
-2. The support widget bubble pulses — user clicks it, enters "report mode"
-3. User clicks on the broken element — a **glassmorphic chat panel appears anchored to that element**
-4. An animated timeline shows what the user just did (PostHog events)
-5. The AI agent investigates: pulls events, reads the source code, checks business rules
-6. AI asks 1-2 clarifying questions, then delivers a verdict: "UX Issue — the UI shows invalid status transitions"
-7. Second demo: user tries checkout with out-of-stock item, widget auto-triggers on error
-8. Engineer dashboard shows both reports with full context
+Next.js 16 (App Router) / Tailwind v4 (`@theme inline`, not config file) / Vercel AI SDK v6 (`@ai-sdk/react` + `ai`) / OpenAI GPT-4o / PostHog / Framer Motion / Zod
 
-## Tech stack
+## Architecture
 
-- **Next.js 16** (App Router, Turbopack)
-- **Tailwind CSS v4** (design tokens via `@theme inline` in `globals.css`, NOT `tailwind.config.ts`)
-- **Vercel AI SDK v6** (`@ai-sdk/react` for `useChat`, `ai` for `streamText` + tools)
-- **OpenAI GPT-4o** (for the agent)
-- **PostHog** (event tracking + REST API for event retrieval)
-- **Framer Motion** (animations)
-- **Zod** (tool parameter validation)
-
-## What's built (you don't need to touch these)
-
-### The store ("HONE")
-
-| Route | File | What |
-|-------|------|------|
-| `/` | `app/page.tsx` | Landing page |
-| `/orders` | `app/orders/page.tsx` | My Orders list |
-| `/orders/[id]` | `app/orders/[id]/page.tsx` | Order detail — **has broken status flow** |
-| `/cart` | `app/cart/page.tsx` | Shop + cart — **has broken inventory flow** |
-| `/api/orders/[id]/status` | `app/api/orders/[id]/status/route.ts` | PATCH — rejects invalid status transitions |
-| `/api/checkout` | `app/api/checkout/route.ts` | POST — rejects out-of-stock items |
-
-**Broken Flow 1 (UX Issue):** Order ORD-001 is "pending". UI shows ALL status options including "shipped". API rejects pending->shipped with cryptic `ERR_INVALID_TRANSITION` error.
-
-**Broken Flow 2 (Edge Case):** Product "Desk Mat" (prod-5) has 0 stock but UI shows "Out of stock" (previously showed "Limited" — either way, user can still try to check out). API rejects with `CHECKOUT_FAILED: STOCK_INSUFFICIENT`.
-
-Both broken flows dispatch `window.dispatchEvent(new CustomEvent('relay-engine:error', { detail: { message } }))` which the widget listens for.
-
-### The widget (Relay Engine)
-
-| Component | File | What |
-|-----------|------|------|
-| Wrapper | `components/relay-engine/relay-engine.tsx` | State machine: idle -> report -> chat. Listens for error events. |
-| Bubble | `components/relay-engine/floating-bubble.tsx` | 44px circle, bottom-right. Breathing pulse. Turns red on error. |
-| Element Selector | `components/relay-engine/element-selector.tsx` | Report mode overlay. Crosshair cursor. Hover highlight. Click to select. |
-| Chat Panel | `components/relay-engine/chat-panel.tsx` | **Glassmorphic panel anchored to clicked element.** Uses `useChat` from `@ai-sdk/react`. |
-| Event Timeline | `components/relay-engine/event-timeline.tsx` | Animated step-by-step timeline. Staggered entrance. Error dots pulse red. |
-| Classification Card | `components/relay-engine/classification-card.tsx` | Verdict reveal card. Spring animation. Bug/Edge Case/UX Issue. |
-
-**State flow:**
 ```
-idle -> [click bubble] -> report mode -> [click element] -> chat (panel anchored to element)
-idle -> [error event fires] -> bubble turns red -> [1.5s delay] -> chat auto-opens
+Store (HONE)                    Widget (Relay Engine)              Agent API
+─────────────                   ──────────────────────             ──────────
+/orders, /cart                  Floating bubble                    POST /api/chat
+Two broken flows                Element selector overlay           streamText + tools
+Dispatch CustomEvents           Glassmorphic chat panel            ├─ getUserEvents (PostHog)
+on errors                       ├─ useChat hook → /api/chat       ├─ readSourceFile (codebase)
+                                ├─ Event timeline (animated)       ├─ searchBusinessRules (MD)
+                                └─ Classification card (verdict)   └─ classifyIssue (saves report)
+                                                                   maxSteps: 5
 ```
 
-**Chat panel positioning:** `computePosition(boundingBox)` tries below the element, then above, then to the right, then falls back to bottom-right corner. Viewport-clamped.
+## The two demo flows
 
-### Data
+**Flow 1 — UX Issue:** `/orders/ORD-001` (status: pending). UI shows ALL status buttons including "Shipped". API rejects pending→shipped with `ERR_INVALID_TRANSITION`. The agent should read the code + business rules and classify as UX Issue (UI shouldn't offer invalid transitions).
 
-| File | What |
-|------|------|
-| `lib/types.ts` | TypeScript types for Order, OrderStatus, Report, TimelineEvent, etc. |
-| `lib/mock-data.ts` | 4 mock orders, 6 mock products, valid status transitions map, mock timeline events |
+**Flow 2 — Edge Case:** `/cart`. "Desk Mat" has 0 stock but UI lets you add to cart. Checkout fails with `STOCK_INSUFFICIENT`. The agent should classify as Edge Case (race condition, no cart reservation).
 
----
+Both flows dispatch `CustomEvent('relay-engine:error')` — the widget auto-triggers on these.
 
-## What you need to build
+## What we need to build together
 
-### 1. `docs/BUSINESS_RULES.md` (5 min)
+The whole backend/agent layer. Here's the surface area:
 
-The AI agent reads this file to determine if reported behavior is intentional. Write it documenting:
-- Valid order status transitions (pending->processing->shipped->delivered)
-- Inventory rules (stock checked at checkout time, no cart reservations)
-- Known UX gaps (UI shows invalid transitions, "Out of stock" labeling)
+| What | Files | Notes |
+|------|-------|-------|
+| Business rules doc | `docs/BUSINESS_RULES.md` | Agent reads this to check if behavior is intentional. Status transitions, inventory rules, known UX gaps. |
+| PostHog integration | `lib/posthog.ts`, `components/posthog-provider.tsx` | SDK init + provider. Add custom events to broken flows. Falls back to mock data if no API key. |
+| Agent tools | `lib/tools/{posthog,codebase,business-rules}.ts` | `getUserEvents()`, `readSourceFile()` (whitelisted dirs), `searchBusinessRules()` |
+| **Agent API route** | `app/api/chat/route.ts` | `streamText()` with OpenAI + 4 tools + `maxSteps: 5`. System prompt: empathetic, investigates before asking, classifies at the end. |
+| Report store | `lib/store.ts`, `app/api/reports/route.ts` | In-memory. `classifyIssue` tool saves here. |
+| Dashboard | `app/reports/page.tsx` | Report cards with classification, expandable details. For judge deep-dive. |
+| Deploy | Vercel | Env vars: `OPENAI_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` |
 
-### 2. PostHog SDK setup (10 min)
+The critical path is the agent API route + tools. Everything else is straightforward.
 
-**Create:**
-- `lib/posthog.ts` — PostHog client init (`posthog.init()` with project key)
-- `components/posthog-provider.tsx` — Provider component, captures pageviews on route change
+## How the frontend connects to the agent
 
-**Modify:**
-- `app/layout.tsx` — Wrap in PostHogProvider
+The chat panel uses `useChat` from `@ai-sdk/react`. It POSTs to `/api/chat` with `{ messages, elementContext, autoTriggered, errorMessage }` in the body.
 
-**Add custom events** to the broken flows:
-- Order detail: `posthog.capture('order_status_change_attempted', { orderId, fromStatus, toStatus })`
-- Cart: `posthog.capture('checkout_submitted', { itemCount, total })`
-
-**Env vars needed:** `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`
-
-### 3. Agent tools (15 min)
-
-**Create `lib/tools/`:**
-
-**`posthog.ts`** — `getUserEvents(sessionId)`: Call PostHog REST API (`/api/event/`) to get recent events for the session. Falls back to `MOCK_TIMELINE_EVENTS` if no API key.
-
-**`codebase.ts`** — `readSourceFile(filePath)`: Reads files from the project. Whitelist: `app/`, `components/`, `lib/`, `docs/`. Security: prevent path traversal.
-
-**`business-rules.ts`** — `searchBusinessRules(query)`: Reads `docs/BUSINESS_RULES.md`, searches for sections matching the query.
-
-### 4. Agent API route — THE MAIN EVENT (15 min)
-
-**Create: `app/api/chat/route.ts`**
-
-This is the brain. Uses Vercel AI SDK v6:
-
-```ts
-import { openai } from '@ai-sdk/openai'
-import { streamText, tool } from 'ai'
-import { z } from 'zod'
-
-export async function POST(req: Request) {
-  const { messages, elementContext, autoTriggered, errorMessage } = await req.json()
-
-  const result = streamText({
-    model: openai('gpt-4o'),
-    system: `[empathetic support agent prompt — see design doc]`,
-    messages,
-    tools: {
-      getUserEvents: tool({ ... }),      // PostHog
-      readSourceFile: tool({ ... }),     // Codebase
-      searchBusinessRules: tool({ ... }),// MD docs
-      classifyIssue: tool({ ... }),      // Final verdict — saves to report store
-    },
-    maxSteps: 5,  // Agent chains up to 5 tool calls autonomously
-  })
-
-  return result.toDataStreamResponse()
-}
-```
-
-**Key:** The `classifyIssue` tool is how the agent delivers its verdict. The chat panel parses tool invocation results from messages to detect when classification happens and renders the ClassificationCard.
-
-**Env vars needed:** `OPENAI_API_KEY`
-
-### 5. Report store (5 min)
-
-**Create:**
-- `lib/store.ts` — In-memory array of Reports. `addReport()` and `getReports()`.
-- `app/api/reports/route.ts` — GET endpoint returning all reports.
-
-The `classifyIssue` tool's execute function calls `addReport()` to save.
-
-### 6. Engineer dashboard (10 min)
-
-**Create: `app/reports/page.tsx`**
-
-Grid of report cards. Each card shows: classification dot + label, title, timestamp, summary. Click to expand: full evidence, element context. Polls `/api/reports` every 5s during demo.
-
-Add "Reports" link to `components/nav.tsx`.
-
-### 7. Polish + deploy (15 min)
-
-- Test both demo flows end-to-end
-- Deploy to Vercel: `npx vercel --prod`
-- Set env vars in Vercel dashboard
-
----
+The chat panel parses messages for tool invocations — specifically looking for `classifyIssue` tool results. When found, it renders a `ClassificationCard` component with the verdict. The parsing checks for `part.type === 'dynamic-tool'` and `part.toolName === 'classifyIssue'` with `part.state === 'output-available'` (Vercel AI SDK v6 patterns).
 
 ## How to run
 
@@ -184,77 +67,18 @@ git clone git@github.com:iamgenechua/relay-engine.git
 cd relay-engine
 npm install
 npm run dev
-# Open http://localhost:3000
 ```
 
-To test the broken flows:
-1. Go to `/orders` -> click ORD-001 -> click "Shipped" -> see error
-2. Go to `/cart` -> add "Desk Mat" -> click "Place Order" -> see error
+Try the broken flows, click the green bubble, enter report mode, click an element.
 
-The widget bubble is visible on every page. Click it to enter report mode.
+## Open decisions
 
----
+- PostHog: live events vs mock fallback (depends on whether we set up a project)
+- System prompt tuning (the design doc has a draft but we should iterate on it live)
+- How many tool calls / follow-up questions feel right for the demo pacing
+- Dashboard: how much polish vs time spent on the agent itself
 
-## File tree (what matters)
+## Reference docs
 
-```
-relay-engine/
-├── app/
-│   ├── globals.css              <- Design tokens (@theme inline for Tailwind v4)
-│   ├── layout.tsx               <- Root layout (fonts, nav, widget)
-│   ├── page.tsx                 <- Store landing
-│   ├── orders/
-│   │   ├── page.tsx             <- My Orders list
-│   │   └── [id]/page.tsx        <- Order detail (BROKEN FLOW 1)
-│   ├── cart/page.tsx            <- Shop + cart (BROKEN FLOW 2)
-│   ├── api/
-│   │   ├── orders/[id]/status/route.ts  <- Status update API
-│   │   ├── checkout/route.ts            <- Checkout API
-│   │   ├── chat/route.ts               <- YOU BUILD THIS (agent)
-│   │   └── reports/route.ts            <- YOU BUILD THIS (reports API)
-│   └── reports/page.tsx                <- YOU BUILD THIS (dashboard)
-├── components/
-│   ├── nav.tsx                  <- Store navigation
-│   └── relay-engine/
-│       ├── relay-engine.tsx     <- Widget wrapper (state machine)
-│       ├── floating-bubble.tsx  <- The bubble button
-│       ├── element-selector.tsx <- Report mode overlay
-│       ├── chat-panel.tsx       <- Glassmorphic chat (uses useChat)
-│       ├── event-timeline.tsx   <- Animated step timeline
-│       └── classification-card.tsx <- Verdict reveal card
-├── lib/
-│   ├── types.ts                 <- All TypeScript types
-│   ├── mock-data.ts             <- Orders, products, transitions, events
-│   ├── store.ts                 <- YOU BUILD THIS (in-memory reports)
-│   ├── posthog.ts               <- YOU BUILD THIS (PostHog client)
-│   └── tools/                   <- YOU BUILD THIS
-│       ├── posthog.ts           <- Event retrieval tool
-│       ├── codebase.ts          <- File reader tool
-│       └── business-rules.ts    <- MD search tool
-├── docs/
-│   ├── BUSINESS_RULES.md        <- YOU BUILD THIS (agent reads this)
-│   └── plans/
-│       ├── 2026-02-27-relay-engine-design.md
-│       └── 2026-02-27-relay-engine-implementation.md
-└── package.json
-```
-
----
-
-## Decisions to revisit together
-
-| # | Decision | Current default | Worth discussing? |
-|---|----------|----------------|-------------------|
-| 1 | Data storage | In-memory (resets on restart) | Fine for demo |
-| 2 | Number of AI follow-ups | 2 before classify | Test during demo rehearsal |
-| 3 | PostHog: live events vs mock | Falls back to mock if no API key | Depends on if we set up PostHog project |
-| 4 | Dashboard polish level | Functional, minimal | Based on remaining time |
-| 5 | Auto-trigger timing | 1.5s delay after error | May want faster/slower |
-| 6 | System prompt tone | Empathetic CSM, never uses jargon | Read design doc for details |
-
----
-
-## Key design docs (read if you have time)
-
-- `docs/plans/2026-02-27-relay-engine-design.md` — Full product design, demo script, agent personality
-- `docs/plans/2026-02-27-relay-engine-implementation.md` — Detailed implementation plan with code samples for every task
+- `docs/plans/2026-02-27-relay-engine-design.md` — product design, agent personality, demo script
+- `docs/plans/2026-02-27-relay-engine-implementation.md` — full implementation plan with code samples for every remaining task
