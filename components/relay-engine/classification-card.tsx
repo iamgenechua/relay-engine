@@ -39,13 +39,13 @@ const themes = {
 const fadeSlide = (delay: number) => ({
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
-  transition: { delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  transition: { delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 })
 
 const fade = (delay: number) => ({
   initial: { opacity: 0 },
   animate: { opacity: 1 },
-  transition: { delay, duration: 0.4, ease: 'easeOut' },
+  transition: { delay, duration: 0.4, ease: 'easeOut' as const },
 })
 
 export default function ClassificationCard({

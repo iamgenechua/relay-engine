@@ -16,7 +16,7 @@ const eventEmojis: Record<string, string> = {
   navigation: '\u{1F517}',
 }
 
-const staggerEasing = [0.22, 1, 0.36, 1] as const
+const staggerEasing: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
 export default function EventTimeline({
   events,
@@ -70,7 +70,7 @@ export default function EventTimeline({
             transition={{
               delay: index * 0.15,
               duration: 0.5,
-              ease: staggerEasing as unknown as number[],
+              ease: staggerEasing,
             }}
             className="relative flex items-start gap-3"
             style={{
