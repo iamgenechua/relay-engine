@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Source_Sans_3, JetBrains_Mono } from 'next/font/google'
+import { Nav } from '@/components/nav'
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -33,7 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} ${sourceSans.variable} ${jetbrainsMono.variable}`}>
       <body>
-        {children}
+        <Nav />
+        <main className="mx-auto max-w-5xl px-6 py-8">
+          {children}
+        </main>
       </body>
     </html>
   );
