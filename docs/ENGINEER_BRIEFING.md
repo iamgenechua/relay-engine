@@ -1,4 +1,4 @@
-# Relay Engine — Hackathon Briefing
+# Relay Engine — Current Progress
 
 ## The idea
 
@@ -8,28 +8,33 @@ Non-technical users report bugs and request features with massive context loss. 
 
 Think: an agentic 24/7 CSM that genuinely understands the technical side.
 
-## The angles we're pushing
+## Things we can lean into
 
-If we're going to win, these are the things we lean into hard during the demo:
+These are the angles I've been thinking about so far — open to riffing on all of these:
 
 **1. Direct component interaction (not just a chatbot)**
-The user doesn't open a generic chat widget and type "something broke." They click directly on the element that failed — and the chatbot opens *right there*, already knowing what they clicked. The element-level interaction is the first thing judges will notice. Nobody else will have this.
+User clicks directly on the element that failed — chatbot opens *right there*, already knowing what they clicked. Element-level interaction, not a generic chat widget.
 
 **2. Context-aware investigation**
-The agent doesn't ask "what happened?" — it already knows. It reads the source code, checks the business rules, and sees the user's current state. It asks *smart follow-ups* on top of that existing context. The conversation starts at step 3, not step 0.
+The agent already knows the codebase, the business rules, and the user's current state. It asks *smart follow-ups* on top of existing context. Conversation starts at step 3, not step 0.
 
 **3. Session replay via PostHog**
-Before the user even says anything, the agent has their full event timeline — every page visit, every click, every API error. It synthesizes the sequence and uses it to determine whether this is actually a bug or expected behavior. This is the technical depth that separates us from a wrapper around GPT.
+Full event timeline before the user says anything — every page visit, click, API error. Agent synthesizes the sequence to determine whether it's actually a bug or expected behavior.
 
 **4. Empathetic CSM, not a fact-finder**
-This is not a triage bot. It's a customer success manager that genuinely cares about retaining the customer. "Your order is safe." "You haven't been charged." "You won't have to explain this again." The warmth is a deliberate product decision — non-technical users get assurance, not just classification. This is the spark of thoughtfulness that judges will remember.
+Not a triage bot. "Your order is safe." "You haven't been charged." "You won't have to explain this again." The warmth is a deliberate product decision — non-technical users get assurance, not just classification.
 
-**5. Engineer dashboard (the payoff)**
-Everything the agent gathered — PostHog timeline, source code references, business rule checks, user conversation, final classification — lands on an engineer dashboard as a structured report. Zero information loss from user to eng. This is where we close the loop and show the full value chain.
+**5. Voice input (ElevenLabs)**
+The user is frustrated — they don't want to type. They just talk. Same pipeline underneath, but the form factor change is a delighter. I have a bunch of ElevenLabs credits we can use.
 
-## What's done
+**6. Engineer dashboard (the payoff)**
+Everything the agent gathered — PostHog timeline, source code references, business rule checks, user conversation, final classification — lands as a structured report. Zero information loss from user to eng.
 
-I prepped all the frontend — a fake e-commerce store ("HONE") with two intentionally broken flows, and the full widget UI with glassmorphic chat panel, animations, element selection. Everything builds and runs. **No backend agent logic exists yet — that's our work tomorrow.**
+## What I've built so far
+
+The full frontend is done — a fake e-commerce store ("HONE") with two intentionally broken flows, and the widget UI (glassmorphic chat panel, animations, element selection). Everything builds and runs.
+
+No backend agent logic exists yet.
 
 ## Stack
 
@@ -51,33 +56,32 @@ on errors                       ├─ useChat hook → /api/chat       ├─ r
 
 ## The two demo flows
 
-**Flow 1 — UX Issue:** `/orders/ORD-001` (status: pending). UI shows ALL status buttons including "Shipped". API rejects pending→shipped with `ERR_INVALID_TRANSITION`. The agent should read the code + business rules and classify as UX Issue (UI shouldn't offer invalid transitions).
+**Flow 1 — UX Issue:** `/orders/ORD-001` (status: pending). UI shows ALL status buttons including "Shipped". API rejects pending→shipped with `ERR_INVALID_TRANSITION`. Agent reads code + business rules → classifies as UX Issue.
 
-**Flow 2 — Edge Case:** `/cart`. "Desk Mat" has 0 stock but UI lets you add to cart. Checkout fails with `STOCK_INSUFFICIENT`. The agent should classify as Edge Case (race condition, no cart reservation).
+**Flow 2 — Edge Case:** `/cart`. "Desk Mat" has 0 stock but UI lets you add to cart. Checkout fails with `STOCK_INSUFFICIENT`. Agent classifies as Edge Case (race condition, no cart reservation).
 
 Both flows dispatch `CustomEvent('relay-engine:error')` — the widget auto-triggers on these.
 
-## What we need to build together
+## What's still pending
 
-The whole backend/agent layer. Here's the surface area:
+The backend/agent layer. Here's what I've scoped out so far — happy to discuss how we want to tackle it:
 
 | What | Files | Notes |
 |------|-------|-------|
-| Business rules doc | `docs/BUSINESS_RULES.md` | Agent reads this to check if behavior is intentional. Status transitions, inventory rules, known UX gaps. |
-| PostHog integration | `lib/posthog.ts`, `components/posthog-provider.tsx` | SDK init + provider. Add custom events to broken flows. Falls back to mock data if no API key. |
-| Agent tools | `lib/tools/{posthog,codebase,business-rules}.ts` | `getUserEvents()`, `readSourceFile()` (whitelisted dirs), `searchBusinessRules()` |
-| **Agent API route** | `app/api/chat/route.ts` | `streamText()` with OpenAI + 4 tools + `maxSteps: 5`. System prompt: empathetic, investigates before asking, classifies at the end. |
-| Report store | `lib/store.ts`, `app/api/reports/route.ts` | In-memory. `classifyIssue` tool saves here. |
-| Dashboard | `app/reports/page.tsx` | Report cards with classification, expandable details. For judge deep-dive. |
+| Business rules doc | `docs/BUSINESS_RULES.md` | Agent reads this to check if behavior is intentional |
+| PostHog integration | `lib/posthog.ts`, `components/posthog-provider.tsx` | SDK init + provider. Falls back to mock data if no API key |
+| Agent tools | `lib/tools/{posthog,codebase,business-rules}.ts` | `getUserEvents()`, `readSourceFile()`, `searchBusinessRules()` |
+| **Agent API route** | `app/api/chat/route.ts` | `streamText()` with OpenAI + tools + `maxSteps: 5` |
+| Report store | `lib/store.ts`, `app/api/reports/route.ts` | In-memory. `classifyIssue` tool saves here |
+| Dashboard | `app/reports/page.tsx` | Report cards with classification, expandable details |
+| Voice input | TBD | ElevenLabs STT → feed into same chat pipeline |
 | Deploy | Vercel | Env vars: `OPENAI_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` |
-
-The critical path is the agent API route + tools. Everything else is straightforward.
 
 ## How the frontend connects to the agent
 
 The chat panel uses `useChat` from `@ai-sdk/react`. It POSTs to `/api/chat` with `{ messages, elementContext, autoTriggered, errorMessage }` in the body.
 
-The chat panel parses messages for tool invocations — specifically looking for `classifyIssue` tool results. When found, it renders a `ClassificationCard` component with the verdict. The parsing checks for `part.type === 'dynamic-tool'` and `part.toolName === 'classifyIssue'` with `part.state === 'output-available'` (Vercel AI SDK v6 patterns).
+The chat panel parses tool invocations — looks for `classifyIssue` results and renders a `ClassificationCard` with the verdict. Uses Vercel AI SDK v6 patterns (`part.type === 'dynamic-tool'`, `part.state === 'output-available'`).
 
 ## How to run
 
@@ -90,14 +94,15 @@ npm run dev
 
 Try the broken flows, click the green bubble, enter report mode, click an element.
 
-## Open decisions
+## Open questions
 
 - PostHog: live events vs mock fallback (depends on whether we set up a project)
-- System prompt tuning (the design doc has a draft but we should iterate on it live)
-- How many tool calls / follow-up questions feel right for the demo pacing
-- Dashboard: how much polish vs time spent on the agent itself
+- System prompt tuning — there's a draft in the design doc but should iterate live
+- How many tool calls / follow-up questions feel right for demo pacing
+- Dashboard: how much polish vs time on the agent itself
+- Voice: where to slot ElevenLabs in (input only, or output too?)
 
 ## Reference docs
 
 - `docs/plans/2026-02-27-relay-engine-design.md` — product design, agent personality, demo script
-- `docs/plans/2026-02-27-relay-engine-implementation.md` — full implementation plan with code samples for every remaining task
+- `docs/plans/2026-02-27-relay-engine-implementation.md` — implementation plan with code samples for remaining tasks
