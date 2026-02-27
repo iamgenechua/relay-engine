@@ -10,7 +10,7 @@ interface CartEntry {
   quantity: number
 }
 
-export default function CheckoutPage() {
+export default function CartPage() {
   const [cart, setCart] = useState<Record<string, CartEntry>>({})
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -72,7 +72,6 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         setError(data.error)
-        // Dispatch custom event for Relay Engine auto-trigger
         window.dispatchEvent(
           new CustomEvent('relay-engine:error', {
             detail: { message: data.error },
@@ -81,7 +80,7 @@ export default function CheckoutPage() {
         return
       }
 
-      setSuccess(`Order placed successfully! Your order ID is ${data.orderId}`)
+      setSuccess(`Order placed. Your order ID is ${data.orderId}`)
       setCart({})
     } catch {
       setError('Network error. Please try again.')
@@ -92,57 +91,60 @@ export default function CheckoutPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-text">
-          Checkout
+      <div className="mb-10">
+        <h1 className="font-display text-3xl font-medium text-text">
+          Shop
         </h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Browse products and place your order
+        <p className="mt-2 font-body text-sm text-text-tertiary">
+          Browse our collection and add items to your cart
         </p>
       </div>
 
-      {/* Success banner */}
+      {/* Success message */}
       {success && (
-        <div className="mb-6 rounded-[var(--radius-md)] border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <p className="text-sm font-medium text-emerald-800">{success}</p>
+        <div className="mb-8 rounded-[var(--radius-md)] border border-border bg-accent-light px-5 py-4">
+          <p className="font-body text-sm text-accent-dark">{success}</p>
         </div>
       )}
 
-      {/* Error banner */}
+      {/* Error message */}
       {error && (
-        <div className="mb-6 rounded-[var(--radius-md)] border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-medium text-red-800">{error}</p>
+        <div className="mb-8 rounded-[var(--radius-md)] border border-border bg-bg-subtle px-5 py-4">
+          <p className="font-body text-sm text-text">{error}</p>
         </div>
       )}
 
       {/* Product grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-10">
         {MOCK_PRODUCTS.map((product) => {
           const inCart = cart[product.id]?.quantity ?? 0
 
           return (
             <div
               key={product.id}
-              className="rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md"
+              className="rounded-[var(--radius-lg)] border border-border bg-surface p-6 shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-sm font-semibold text-text">
+              {/* Product image placeholder */}
+              <div className="mb-5 aspect-square rounded-[var(--radius-md)] bg-bg-subtle" />
+
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-body text-sm font-medium text-text">
                   {product.name}
                 </h3>
-                <p className="font-mono text-sm font-semibold text-text whitespace-nowrap ml-2">
+                <p className="font-mono text-sm text-text ml-3 whitespace-nowrap">
                   ${product.price.toFixed(2)}
                 </p>
               </div>
 
               {/* Stock indicator */}
-              <div className="mb-4">
+              <div className="mb-5">
                 {product.stock > 0 ? (
-                  <span className="text-xs font-medium text-emerald-600">
-                    {product.stock} left
+                  <span className="font-body text-xs text-text-tertiary">
+                    {product.stock <= 5 ? `Only ${product.stock} left` : 'In stock'}
                   </span>
                 ) : (
-                  <span className="text-xs font-medium text-text-tertiary">
-                    Limited
+                  <span className="font-body text-xs text-text-tertiary">
+                    Out of stock
                   </span>
                 )}
               </div>
@@ -152,18 +154,18 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => removeFromCart(product.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-border text-text-secondary hover:bg-bg-subtle transition-colors text-sm font-medium"
+                    className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-border font-body text-sm text-text-secondary transition-colors hover:bg-bg-subtle"
                   >
                     &minus;
                   </button>
-                  <span className="font-mono text-sm font-medium text-text w-6 text-center">
+                  <span className="font-mono text-sm text-text w-6 text-center">
                     {inCart}
                   </span>
                   <button
                     onClick={() =>
                       addToCart(product.id, product.name, product.price)
                     }
-                    className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] border border-border text-text-secondary hover:bg-bg-subtle transition-colors text-sm font-medium"
+                    className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] border border-border font-body text-sm text-text-secondary transition-colors hover:bg-bg-subtle"
                   >
                     +
                   </button>
@@ -173,7 +175,8 @@ export default function CheckoutPage() {
                   onClick={() =>
                     addToCart(product.id, product.name, product.price)
                   }
-                  className="rounded-[var(--radius-sm)] border border-border px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-subtle hover:text-text transition-colors"
+                  className="rounded-[var(--radius-sm)] border border-border px-4 py-2 font-body text-xs font-normal text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                  style={{ letterSpacing: '0.04em' }}
                 >
                   Add to cart
                 </button>
@@ -185,19 +188,19 @@ export default function CheckoutPage() {
 
       {/* Cart summary */}
       {cartItems.length > 0 && (
-        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-6 shadow-sm">
-          <h2 className="font-display text-base font-semibold text-text mb-4">
-            Cart Summary
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 shadow-sm">
+          <h2 className="font-display text-lg font-medium text-text mb-5">
+            Your Cart
           </h2>
           <div className="divide-y divide-border-subtle">
             {cartItems.map((item) => (
               <div
                 key={item.productId}
-                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                className="flex items-center justify-between py-4 first:pt-0 last:pb-0"
               >
                 <div>
-                  <p className="text-sm font-medium text-text">{item.name}</p>
-                  <p className="text-xs text-text-tertiary">
+                  <p className="font-body text-sm text-text">{item.name}</p>
+                  <p className="font-body text-xs text-text-tertiary">
                     Qty: {item.quantity} &times; ${item.price.toFixed(2)}
                   </p>
                 </div>
@@ -207,16 +210,17 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-            <p className="text-sm font-semibold text-text">Total</p>
-            <p className="font-mono text-lg font-semibold text-text">
+          <div className="mt-5 flex items-center justify-between border-t border-border pt-5">
+            <p className="font-body text-sm font-medium text-text">Total</p>
+            <p className="font-mono text-lg font-medium text-text">
               ${cartTotal.toFixed(2)}
             </p>
           </div>
           <button
             onClick={handleCheckout}
             disabled={isSubmitting}
-            className="mt-5 w-full rounded-[var(--radius-md)] bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-6 w-full rounded-[var(--radius-md)] bg-accent px-4 py-3 font-body text-sm font-medium text-white transition-colors hover:bg-accent-dark disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ letterSpacing: '0.04em' }}
           >
             {isSubmitting ? 'Processing...' : 'Place Order'}
           </button>

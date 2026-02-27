@@ -2,89 +2,94 @@ import Link from 'next/link'
 import { MOCK_ORDERS } from '@/lib/mock-data'
 import { OrderStatus } from '@/lib/types'
 
-const STATUS_STYLES: Record<OrderStatus, string> = {
-  pending:
-    'bg-amber-50 text-amber-700 border-amber-200',
-  processing:
-    'bg-blue-50 text-blue-700 border-blue-200',
-  shipped:
-    'bg-violet-50 text-violet-700 border-violet-200',
-  delivered:
-    'bg-emerald-50 text-emerald-700 border-emerald-200',
-  cancelled:
-    'bg-neutral-100 text-neutral-500 border-neutral-200',
+const STATUS_CONFIG: Record<OrderStatus, { color: string; label: string }> = {
+  pending: { color: 'var(--color-status-pending)', label: 'Pending' },
+  processing: { color: 'var(--color-status-processing)', label: 'Processing' },
+  shipped: { color: 'var(--color-status-shipped)', label: 'Shipped' },
+  delivered: { color: 'var(--color-status-delivered)', label: 'Delivered' },
+  cancelled: { color: 'var(--color-status-cancelled)', label: 'Cancelled' },
 }
 
 export default function OrdersPage() {
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold text-text">
-          Orders
+      <div className="mb-10">
+        <h1 className="font-display text-3xl font-medium text-text">
+          My Orders
         </h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Manage and track customer orders
+        <p className="mt-2 font-body text-sm text-text-tertiary">
+          Track and manage your recent purchases
         </p>
       </div>
 
       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-sm">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border-subtle bg-bg-subtle">
-              <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-tertiary">
-                Order ID
+            <tr className="border-b border-border-subtle">
+              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
+                Order
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-tertiary">
+              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
                 Customer
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-tertiary">
+              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
                 Status
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-tertiary">
+              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
                 Items
               </th>
-              <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-text-tertiary">
+              <th className="px-6 py-4 text-right font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
                 Total
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
-            {MOCK_ORDERS.map((order) => (
-              <tr
-                key={order.id}
-                className="transition-colors hover:bg-bg-subtle/60"
-              >
-                <td className="px-5 py-4">
-                  <Link
-                    href={`/orders/${order.id}`}
-                    className="font-mono text-sm font-medium text-accent hover:text-accent-dark transition-colors"
-                  >
-                    {order.id}
-                  </Link>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="text-sm font-medium text-text">
-                    {order.customerName}
-                  </div>
-                  <div className="text-xs text-text-tertiary">
-                    {order.customerEmail}
-                  </div>
-                </td>
-                <td className="px-5 py-4">
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[order.status]}`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td className="px-5 py-4 text-sm text-text-secondary">
-                  {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
-                </td>
-                <td className="px-5 py-4 text-right font-mono text-sm font-medium text-text">
-                  ${order.total.toFixed(2)}
-                </td>
-              </tr>
-            ))}
+            {MOCK_ORDERS.map((order) => {
+              const status = STATUS_CONFIG[order.status]
+              return (
+                <tr
+                  key={order.id}
+                  className="transition-colors hover:bg-bg-subtle/50"
+                >
+                  <td className="px-6 py-5">
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className="font-mono text-sm font-medium text-accent transition-colors hover:text-accent-dark"
+                    >
+                      {order.id}
+                    </Link>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="font-body text-sm text-text">
+                      {order.customerName}
+                    </div>
+                    <div className="font-body text-xs text-text-tertiary">
+                      {order.customerEmail}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="block h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: status.color }}
+                      />
+                      <span
+                        className="font-body text-sm"
+                        style={{ color: status.color }}
+                      >
+                        {status.label}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 font-body text-sm text-text-secondary">
+                    {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
+                  </td>
+                  <td className="px-6 py-5 text-right font-mono text-sm font-medium text-text">
+                    ${order.total.toFixed(2)}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

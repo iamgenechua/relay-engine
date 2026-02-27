@@ -45,22 +45,18 @@ function getCssSelector(el: Element): string {
 }
 
 function getElementName(el: Element): string {
-  // Check for aria-label first
   const ariaLabel = el.getAttribute('aria-label')
   if (ariaLabel) return ariaLabel
 
-  // Check for role
   const role = el.getAttribute('role')
   if (role) return `${role} (${el.tagName.toLowerCase()})`
 
-  // Check for common attributes
   const title = el.getAttribute('title')
   if (title) return title
 
   const placeholder = el.getAttribute('placeholder')
   if (placeholder) return placeholder
 
-  // Use tag name + truncated text content
   const text = el.textContent?.trim() || ''
   const tag = el.tagName.toLowerCase()
 
@@ -162,16 +158,20 @@ export default function ElementSelector({
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 10000,
-              background: 'var(--color-chat-bg)',
-              color: 'var(--color-accent)',
-              fontSize: 13,
-              fontWeight: 500,
-              padding: '8px 20px',
+              background: 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              color: 'var(--color-text-secondary)',
+              fontSize: 12,
+              fontWeight: 400,
+              fontFamily: 'var(--font-body), sans-serif',
+              padding: '8px 18px',
               borderRadius: 9999,
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
-              border: '1px solid var(--color-chat-border)',
-              whiteSpace: 'nowrap',
-              pointerEvents: 'none',
+              boxShadow: '0 4px 16px rgba(26, 26, 24, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              whiteSpace: 'nowrap' as const,
+              pointerEvents: 'none' as const,
+              letterSpacing: '0.02em',
             }}
           >
             Click an element to report an issue
@@ -196,29 +196,32 @@ export default function ElementSelector({
               height: highlight.rect.height,
               zIndex: 9997,
               border: '2px solid var(--color-accent)',
-              background: 'rgba(13, 148, 136, 0.08)',
+              background: 'rgba(45, 90, 61, 0.06)',
               borderRadius: 4,
               pointerEvents: 'none',
             }}
           >
-            {/* Element name tooltip */}
+            {/* Element name tooltip — glassmorphic */}
             <div
               style={{
                 position: 'absolute',
                 top: '100%',
                 left: 0,
-                marginTop: 4,
-                background: 'var(--color-chat-bg)',
-                color: 'var(--color-chat-text)',
+                marginTop: 6,
+                background: 'rgba(255, 255, 255, 0.85)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                color: 'var(--color-text)',
                 fontSize: 11,
                 fontFamily: 'var(--font-mono), monospace',
-                padding: '3px 8px',
-                borderRadius: 4,
+                padding: '4px 10px',
+                borderRadius: 6,
                 whiteSpace: 'nowrap',
                 maxWidth: 300,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                boxShadow: '0 2px 12px rgba(26, 26, 24, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
                 pointerEvents: 'none',
               }}
             >

@@ -2,43 +2,48 @@
 
 @layer base {
   :root {
-    /* Warm neutrals — NOT cold gray */
-    --color-bg: #FAFAF8;
-    --color-bg-subtle: #F5F4F0;
-    --color-bg-muted: #EEEDEA;
+    /* Store — warm cream base */
+    --color-bg: #F8F7F4;
+    --color-bg-subtle: #F2F0EC;
+    --color-bg-muted: #E8E6E1;
     --color-surface: #FFFFFF;
-    --color-text: #1A1918;
-    --color-text-secondary: #6B6966;
-    --color-text-tertiary: #9C9890;
-    --color-border: #E2E0DB;
-    --color-border-subtle: #EEEDEA;
+    --color-text: #1A1A18;
+    --color-text-secondary: #6B6963;
+    --color-text-tertiary: #A09D95;
+    --color-border: #DDD9D1;
+    --color-border-subtle: #EBE8E2;
 
-    /* Accent — warm teal */
-    --color-accent: #0D9488;
-    --color-accent-light: #CCFBF1;
-    --color-accent-dark: #0F766E;
+    /* Accent — deep forest green */
+    --color-accent: #2D5A3D;
+    --color-accent-light: #E8F0EB;
+    --color-accent-dark: #1E3D29;
 
-    /* Classification colors */
-    --color-bug: #DC2626;
-    --color-bug-light: #FEF2F2;
-    --color-edge-case: #D97706;
-    --color-edge-case-light: #FFFBEB;
-    --color-ux-issue: #2563EB;
-    --color-ux-issue-light: #EFF6FF;
+    /* Status colors */
+    --color-status-pending: #B8860B;
+    --color-status-processing: #4A6FA5;
+    --color-status-shipped: #6B5B95;
+    --color-status-delivered: #2D5A3D;
+    --color-status-cancelled: #8B8680;
 
-    /* Chat panel — dark mode for contrast */
-    --color-chat-bg: #1C1C1A;
-    --color-chat-surface: #2A2A27;
-    --color-chat-text: #F0EFEC;
-    --color-chat-text-secondary: #9C9890;
-    --color-chat-border: #3A3A36;
-    --color-chat-input-bg: #232321;
+    /* Classification — muted, tasteful */
+    --color-bug: #9B3B3B;
+    --color-bug-bg: #F9F2F2;
+    --color-edge-case: #8B6914;
+    --color-edge-case-bg: #FAF7EF;
+    --color-ux-issue: #3B5998;
+    --color-ux-issue-bg: #F0F3F9;
+
+    /* Widget — glassmorphic frosted */
+    --color-widget-bg: rgba(255, 255, 255, 0.72);
+    --color-widget-border: rgba(255, 255, 255, 0.5);
+    --color-widget-text: #1A1A18;
+    --color-widget-text-secondary: #6B6963;
+    --color-widget-shadow: 0 8px 40px rgba(26, 26, 24, 0.12), 0 2px 8px rgba(26, 26, 24, 0.06);
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(26, 25, 24, 0.05);
-    --shadow-md: 0 4px 12px rgba(26, 25, 24, 0.08);
-    --shadow-lg: 0 12px 32px rgba(26, 25, 24, 0.12);
-    --shadow-bubble: 0 4px 20px rgba(13, 148, 136, 0.25);
+    --shadow-sm: 0 1px 3px rgba(26, 26, 24, 0.04);
+    --shadow-md: 0 4px 16px rgba(26, 26, 24, 0.06);
+    --shadow-lg: 0 12px 40px rgba(26, 26, 24, 0.1);
 
     /* Radii */
     --radius-sm: 6px;
@@ -49,8 +54,8 @@
 }
 
 @theme inline {
-  --font-display: var(--font-dm-sans);
-  --font-body: var(--font-source-sans);
+  --font-display: var(--font-eb-garamond);
+  --font-body: var(--font-outfit);
   --font-mono: var(--font-jetbrains-mono);
 
   --color-bg: var(--color-bg);
@@ -65,23 +70,28 @@
   --color-accent: var(--color-accent);
   --color-accent-light: var(--color-accent-light);
   --color-accent-dark: var(--color-accent-dark);
+
+  --color-status-pending: var(--color-status-pending);
+  --color-status-processing: var(--color-status-processing);
+  --color-status-shipped: var(--color-status-shipped);
+  --color-status-delivered: var(--color-status-delivered);
+  --color-status-cancelled: var(--color-status-cancelled);
+
   --color-bug: var(--color-bug);
-  --color-bug-light: var(--color-bug-light);
+  --color-bug-bg: var(--color-bug-bg);
   --color-edge-case: var(--color-edge-case);
-  --color-edge-case-light: var(--color-edge-case-light);
+  --color-edge-case-bg: var(--color-edge-case-bg);
   --color-ux-issue: var(--color-ux-issue);
-  --color-ux-issue-light: var(--color-ux-issue-light);
-  --color-chat-bg: var(--color-chat-bg);
-  --color-chat-surface: var(--color-chat-surface);
-  --color-chat-text: var(--color-chat-text);
-  --color-chat-text-secondary: var(--color-chat-text-secondary);
-  --color-chat-border: var(--color-chat-border);
-  --color-chat-input: var(--color-chat-input-bg);
+  --color-ux-issue-bg: var(--color-ux-issue-bg);
+
+  --color-widget-bg: var(--color-widget-bg);
+  --color-widget-border: var(--color-widget-border);
+  --color-widget-text: var(--color-widget-text);
+  --color-widget-text-secondary: var(--color-widget-text-secondary);
 
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
-  --shadow-bubble: var(--shadow-bubble);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -98,15 +108,42 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), serif;
+}
+
+/* Noise texture overlay */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
 }
 
 /* Widget keyframes */
 @keyframes error-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
+    box-shadow: 0 0 0 0 rgba(155, 59, 59, 0.5);
   }
   50% {
-    box-shadow: 0 0 8px 3px rgba(220, 38, 38, 0.4);
+    box-shadow: 0 0 8px 3px rgba(155, 59, 59, 0.3);
   }
+}
+
+/* Scrollbar for widget */
+.widget-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.widget-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.widget-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+.widget-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
 }

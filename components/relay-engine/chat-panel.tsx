@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useChat } from '@ai-sdk/react'
@@ -23,38 +23,110 @@ interface ChatPanelProps {
   errorMessage?: string
 }
 
+const PANEL_WIDTH = 380
+const PANEL_HEIGHT = 520
+const PANEL_GAP = 12
+
 const easeCurve: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
 const panelVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  hidden: { opacity: 0, y: 12, scale: 0.97 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.4, ease: easeCurve },
+    transition: { duration: 0.35, ease: easeCurve },
   },
   exit: {
     opacity: 0,
-    y: 20,
-    scale: 0.95,
-    transition: { duration: 0.25, ease: easeCurve },
+    y: 12,
+    scale: 0.97,
+    transition: { duration: 0.2, ease: easeCurve },
   },
 }
 
 const messageVariants = {
-  hidden: { opacity: 0, y: 8 },
+  hidden: { opacity: 0, y: 6 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: easeCurve },
+    transition: { duration: 0.25, ease: easeCurve },
   },
+}
+
+function computePosition(boundingBox: DOMRect | null): React.CSSProperties {
+  // If no bounding box (auto-triggered), position near bottom-right above the bubble
+  if (!boundingBox) {
+    return {
+      position: 'fixed' as const,
+      bottom: 76,
+      right: 24,
+    }
+  }
+
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+
+  // Try positioning below the element
+  const belowTop = boundingBox.bottom + PANEL_GAP
+  const belowFits = belowTop + PANEL_HEIGHT < vh - 16
+
+  // Try positioning above the element
+  const aboveBottom = vh - boundingBox.top + PANEL_GAP
+  const aboveFits = boundingBox.top - PANEL_GAP - PANEL_HEIGHT > 16
+
+  // Horizontal: try to align left edge with element, then clamp
+  let left = boundingBox.left
+  if (left + PANEL_WIDTH > vw - 16) {
+    left = vw - PANEL_WIDTH - 16
+  }
+  if (left < 16) {
+    left = 16
+  }
+
+  if (belowFits) {
+    return {
+      position: 'fixed' as const,
+      top: belowTop,
+      left,
+    }
+  }
+
+  if (aboveFits) {
+    return {
+      position: 'fixed' as const,
+      bottom: aboveBottom,
+      left,
+    }
+  }
+
+  // Fallback: position to the right of the element
+  const rightLeft = boundingBox.right + PANEL_GAP
+  if (rightLeft + PANEL_WIDTH < vw - 16) {
+    let top = boundingBox.top
+    if (top + PANEL_HEIGHT > vh - 16) {
+      top = vh - PANEL_HEIGHT - 16
+    }
+    if (top < 16) top = 16
+    return {
+      position: 'fixed' as const,
+      top,
+      left: rightLeft,
+    }
+  }
+
+  // Final fallback: near bottom-right
+  return {
+    position: 'fixed' as const,
+    bottom: 76,
+    right: 24,
+  }
 }
 
 function parseClassification(messages: any[]) {
   for (const msg of messages) {
     if (msg.role === 'assistant' && msg.parts) {
       for (const part of msg.parts as any[]) {
-        // AI SDK v6: dynamic-tool parts with state 'output-available'
         if (
           part.type === 'dynamic-tool' &&
           part.toolName === 'classifyIssue' &&
@@ -67,7 +139,6 @@ function parseClassification(messages: any[]) {
             evidence: string
           }
         }
-        // Also support the tool-invocation pattern from the spec
         if (
           (part as any).type === 'tool-invocation' &&
           (part as any).toolName === 'classifyIssue' &&
@@ -114,22 +185,22 @@ function SendIcon() {
 
 function BouncingDots() {
   return (
-    <div className="flex items-center gap-1" style={{ padding: '8px 0' }}>
+    <div className="flex items-center gap-1" style={{ padding: '6px 0' }}>
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
-          animate={{ y: [0, -4, 0] }}
+          animate={{ y: [0, -3, 0] }}
           transition={{
-            duration: 0.6,
+            duration: 0.7,
             repeat: Infinity,
             delay: i * 0.15,
             ease: 'easeInOut',
           }}
           style={{
-            width: 5,
-            height: 5,
+            width: 4,
+            height: 4,
             borderRadius: '50%',
-            background: 'var(--color-chat-text-secondary)',
+            background: 'var(--color-text-tertiary)',
           }}
         />
       ))}
@@ -146,6 +217,7 @@ export default function ChatPanel({
   errorMessage,
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -160,14 +232,21 @@ export default function ChatPanel({
 
   const isLoading = status === 'submitted' || status === 'streaming'
 
-  // Auto-scroll to bottom on new messages
+  // Compute anchored position when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      const box = elementContext?.boundingBox ?? null
+      setPosStyle(computePosition(box))
+    }
+  }, [isOpen, elementContext])
+
+  // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
   const classification = parseClassification(messages)
 
-  // Filter messages to only show those with text content
   const visibleMessages = messages.filter((msg) => {
     const text = getMessageText(msg)
     return text.trim().length > 0
@@ -183,6 +262,13 @@ export default function ChatPanel({
     input.value = ''
   }
 
+  // Random gradient blob positions (stable per mount)
+  const blobPositions = useMemo(() => [
+    { top: '8%', left: '12%', color: 'rgba(232, 199, 174, 0.4)', size: 120 },
+    { top: '55%', right: '8%', color: 'rgba(200, 218, 196, 0.35)', size: 100 },
+    { bottom: '15%', left: '35%', color: 'rgba(242, 240, 236, 0.5)', size: 90 },
+  ], [])
+
   if (typeof window === 'undefined') return null
 
   return createPortal(
@@ -195,238 +281,281 @@ export default function ChatPanel({
           animate="visible"
           exit="exit"
           style={{
-            position: 'fixed',
-            bottom: 76,
-            right: 24,
-            width: 420,
-            height: 600,
+            ...posStyle,
+            width: PANEL_WIDTH,
+            maxHeight: PANEL_HEIGHT,
             zIndex: 9998,
             display: 'flex',
             flexDirection: 'column',
-            background: 'var(--color-chat-bg)',
-            borderRadius: '16px 16px 16px 8px',
-            border: '1px solid var(--color-chat-border)',
-            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2)',
+            borderRadius: 20,
             overflow: 'hidden',
+            boxShadow: '0 8px 40px rgba(26, 26, 24, 0.12), 0 2px 8px rgba(26, 26, 24, 0.06)',
           }}
         >
-          {/* Header */}
+          {/* Gradient mesh background layer */}
           <div
-            className="flex items-center justify-between px-4 py-3"
-            style={{ borderBottom: '1px solid var(--color-chat-border)' }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 0,
+              borderRadius: 20,
+              overflow: 'hidden',
+              pointerEvents: 'none',
+            }}
           >
-            <div className="flex items-center gap-2.5">
+            {blobPositions.map((blob, i) => (
               <div
+                key={i}
                 style={{
-                  width: 8,
-                  height: 8,
+                  position: 'absolute',
+                  top: blob.top,
+                  left: (blob as any).left,
+                  right: (blob as any).right,
+                  bottom: (blob as any).bottom,
+                  width: blob.size,
+                  height: blob.size,
                   borderRadius: '50%',
-                  background: '#10b981',
-                  boxShadow: '0 0 6px rgba(16, 185, 129, 0.4)',
+                  background: blob.color,
+                  filter: 'blur(40px)',
                 }}
               />
-              <div>
-                <h3
-                  className="font-display"
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: 'var(--color-chat-text)',
-                    margin: 0,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  Relay Engine
-                </h3>
-                <p
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--color-chat-text-secondary)',
-                    margin: 0,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  AI Support Agent
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              aria-label="Close chat panel"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--color-chat-text-secondary)',
-                padding: 4,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = 'var(--color-chat-text)')
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = 'var(--color-chat-text-secondary)')
-              }
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            ))}
           </div>
 
-          {/* Event Timeline */}
-          <EventTimeline events={timelineEvents} isVisible={timelineEvents.length > 0} />
-
-          {/* Messages area */}
+          {/* Frosted glass layer */}
           <div
-            className="flex-1"
             style={{
-              overflowY: 'auto',
-              padding: '16px',
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              background: 'rgba(255, 255, 255, 0.72)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderRadius: 20,
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* Content layer */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              height: '100%',
+              maxHeight: PANEL_HEIGHT,
             }}
           >
-            {visibleMessages.map((msg) => {
-              const text = getMessageText(msg)
-              const isUser = msg.role === 'user'
-              return (
-                <motion.div
-                  key={msg.id}
-                  variants={messageVariants}
-                  initial="hidden"
-                  animate="visible"
-                  style={{
-                    display: 'flex',
-                    justifyContent: isUser ? 'flex-end' : 'flex-start',
-                  }}
-                >
-                  <div
-                    style={{
-                      maxWidth: '85%',
-                      padding: '10px 14px',
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      ...(isUser
-                        ? {
-                            background: 'var(--color-accent)',
-                            color: '#ffffff',
-                            borderRadius: '14px 14px 4px 14px',
-                          }
-                        : {
-                            background: 'var(--color-chat-surface)',
-                            color: 'var(--color-chat-text)',
-                            borderRadius: '14px 14px 14px 4px',
-                          }),
-                    }}
-                  >
-                    {text}
-                  </div>
-                </motion.div>
-              )
-            })}
-
-            {/* Classification card */}
-            {classification && (
-              <div style={{ padding: '4px 0' }}>
-                <ClassificationCard
-                  type={classification.type}
-                  title={classification.title}
-                  summary={classification.summary}
-                  evidence={classification.evidence}
-                />
-              </div>
-            )}
-
-            {/* Loading indicator */}
-            {isLoading && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: '1px solid var(--color-border-subtle)' }}
+            >
+              <div className="flex items-center gap-2.5">
                 <div
                   style={{
-                    background: 'var(--color-chat-surface)',
-                    borderRadius: '14px 14px 14px 4px',
-                    padding: '6px 14px',
-                  }}
-                >
-                  <BouncingDots />
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input area */}
-          <div
-            style={{
-              borderTop: '1px solid var(--color-chat-border)',
-              padding: '12px 16px',
-            }}
-          >
-            <form onSubmit={handleSubmit}>
-              <div
-                className="flex items-center gap-2"
-                style={{
-                  background: 'var(--color-chat-input-bg)',
-                  borderRadius: 12,
-                  padding: '8px 10px 8px 14px',
-                }}
-              >
-                <input
-                  name="message"
-                  type="text"
-                  placeholder="Describe what happened..."
-                  autoComplete="off"
-                  style={{
-                    flex: 1,
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: 13,
-                    color: 'var(--color-chat-text)',
-                    lineHeight: 1.4,
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    background: 'var(--color-accent)',
                   }}
                 />
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  aria-label="Send message"
+                <span
+                  className="font-body"
                   style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    background: 'var(--color-accent)',
-                    color: '#ffffff',
-                    border: 'none',
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    opacity: isLoading ? 0.5 : 1,
-                    transition: 'opacity 0.15s ease',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: 'var(--color-text)',
+                    letterSpacing: '0.01em',
                   }}
                 >
-                  <SendIcon />
-                </button>
+                  Support
+                </span>
               </div>
-            </form>
+              <button
+                onClick={onClose}
+                aria-label="Close support panel"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-tertiary)',
+                  padding: 4,
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'color 0.15s ease',
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.color = 'var(--color-text)')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = 'var(--color-text-tertiary)')
+                }
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Event Timeline */}
+            <EventTimeline events={timelineEvents} isVisible={timelineEvents.length > 0} />
+
+            {/* Messages area */}
+            <div
+              className="flex-1 widget-scroll"
+              style={{
+                overflowY: 'auto',
+                padding: '16px 18px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
+            >
+              {visibleMessages.map((msg) => {
+                const text = getMessageText(msg)
+                const isUser = msg.role === 'user'
+                return (
+                  <motion.div
+                    key={msg.id}
+                    variants={messageVariants}
+                    initial="hidden"
+                    animate="visible"
+                    style={{
+                      display: 'flex',
+                      justifyContent: isUser ? 'flex-end' : 'flex-start',
+                    }}
+                  >
+                    <div
+                      className="font-body"
+                      style={{
+                        maxWidth: '85%',
+                        padding: '10px 14px',
+                        fontSize: 14,
+                        lineHeight: 1.55,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        ...(isUser
+                          ? {
+                              background: 'var(--color-accent-light)',
+                              color: 'var(--color-text)',
+                              borderRadius: '14px 14px 4px 14px',
+                            }
+                          : {
+                              background: 'rgba(255, 255, 255, 0.6)',
+                              color: 'var(--color-text)',
+                              borderRadius: '14px 14px 14px 4px',
+                            }),
+                      }}
+                    >
+                      {text}
+                    </div>
+                  </motion.div>
+                )
+              })}
+
+              {/* Classification card */}
+              {classification && (
+                <div style={{ padding: '4px 0' }}>
+                  <ClassificationCard
+                    type={classification.type}
+                    title={classification.title}
+                    summary={classification.summary}
+                    evidence={classification.evidence}
+                  />
+                </div>
+              )}
+
+              {/* Loading indicator */}
+              {isLoading && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.6)',
+                      borderRadius: '14px 14px 14px 4px',
+                      padding: '6px 14px',
+                    }}
+                  >
+                    <BouncingDots />
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input area */}
+            <div
+              style={{
+                borderTop: '1px solid var(--color-border-subtle)',
+                padding: '12px 16px',
+              }}
+            >
+              <form onSubmit={handleSubmit}>
+                <div
+                  className="flex items-center gap-2"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: 12,
+                    padding: '8px 10px 8px 14px',
+                    border: '1px solid var(--color-border-subtle)',
+                  }}
+                >
+                  <input
+                    name="message"
+                    type="text"
+                    placeholder="What happened?"
+                    autoComplete="off"
+                    className="font-body"
+                    style={{
+                      flex: 1,
+                      background: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: 13,
+                      color: 'var(--color-text)',
+                      lineHeight: 1.4,
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    aria-label="Send message"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: 'var(--color-accent)',
+                      color: '#ffffff',
+                      border: 'none',
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      opacity: isLoading ? 0.4 : 1,
+                      transition: 'opacity 0.15s ease',
+                    }}
+                  >
+                    <SendIcon />
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </motion.div>
       )}

@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { DM_Sans, Source_Sans_3, JetBrains_Mono } from 'next/font/google'
+import { EB_Garamond, Outfit, JetBrains_Mono } from 'next/font/google'
 import { Nav } from '@/components/nav'
 import RelayEngine from '@/components/relay-engine/relay-engine'
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const ebGaramond = EB_Garamond({
   subsets: ['latin'],
-  variable: '--font-dm-sans',
+  variable: '--font-eb-garamond',
   weight: ['400', '500', '600', '700'],
 })
 
-const sourceSans = Source_Sans_3({
+const outfit = Outfit({
   subsets: ['latin'],
-  variable: '--font-source-sans',
-  weight: ['400', '500', '600'],
+  variable: '--font-outfit',
+  weight: ['300', '400', '500', '600'],
 })
 
 const jetbrainsMono = JetBrains_Mono({
@@ -23,8 +23,8 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "OrderFlow — Relay Engine Demo",
-  description: "Demo app for Relay Engine hackathon",
+  title: "HONE | Refined Essentials",
+  description: "Curated tech accessories for the modern workspace.",
 };
 
 export default function RootLayout({
@@ -33,8 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${sourceSans.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${ebGaramond.variable} ${outfit.variable} ${jetbrainsMono.variable}`}>
       <body>
+        <div className="grain-overlay" aria-hidden="true" />
         <Nav />
         <main className="mx-auto max-w-5xl px-6 py-8">
           {children}

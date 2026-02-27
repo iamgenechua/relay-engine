@@ -8,14 +8,6 @@ interface EventTimelineProps {
   isVisible: boolean
 }
 
-const eventEmojis: Record<string, string> = {
-  pageview: '\u{1F4C4}',
-  click: '\u{1F446}',
-  api_error: '\u26A0\uFE0F',
-  form_submit: '\u{1F4DD}',
-  navigation: '\u{1F517}',
-}
-
 const staggerEasing: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
 export default function EventTimeline({
@@ -31,21 +23,23 @@ export default function EventTimeline({
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       style={{
-        borderBottom: '1px solid var(--color-chat-border)',
+        borderBottom: '1px solid var(--color-border-subtle)',
         overflow: 'hidden',
       }}
-      className="px-4 pb-3 pt-2"
+      className="px-5 pb-4 pt-3"
     >
       {/* Header */}
       <p
-        className="font-mono uppercase tracking-widest"
+        className="font-display"
         style={{
-          fontSize: 10,
-          color: 'var(--color-chat-text-secondary)',
-          marginBottom: 12,
+          fontSize: 13,
+          fontWeight: 500,
+          color: 'var(--color-text-secondary)',
+          marginBottom: 14,
+          letterSpacing: '0.02em',
         }}
       >
-        Your journey
+        Your session
       </p>
 
       {/* Timeline */}
@@ -58,7 +52,7 @@ export default function EventTimeline({
             top: 4,
             bottom: 4,
             width: 1,
-            background: 'var(--color-chat-border)',
+            background: 'var(--color-border)',
           }}
         />
 
@@ -68,8 +62,8 @@ export default function EventTimeline({
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{
-              delay: index * 0.15,
-              duration: 0.5,
+              delay: index * 0.12,
+              duration: 0.45,
               ease: staggerEasing,
             }}
             className="relative flex items-start gap-3"
@@ -77,26 +71,25 @@ export default function EventTimeline({
               paddingBottom: index < events.length - 1 ? 14 : 4,
             }}
           >
-            {/* Dot */}
+            {/* Dot — consistent small dots, red for errors */}
             <div
               className="flex-shrink-0"
               style={{
                 position: 'absolute',
                 left: -20,
-                top: 3,
-                width: 10,
-                height: 10,
+                top: 4,
+                width: event.isError ? 8 : 6,
+                height: event.isError ? 8 : 6,
                 borderRadius: '50%',
                 transform: 'translateX(-0.5px)',
                 ...(event.isError
                   ? {
-                      background: '#DC2626',
-                      boxShadow: '0 0 0 0 rgba(220, 38, 38, 0.6)',
+                      background: 'var(--color-bug)',
+                      boxShadow: '0 0 0 0 rgba(155, 59, 59, 0.5)',
                       animation: 'error-pulse 2s ease-in-out infinite',
                     }
                   : {
-                      background: 'var(--color-chat-surface)',
-                      border: '1.5px solid var(--color-chat-border)',
+                      background: 'var(--color-border)',
                     }),
               }}
             />
@@ -104,18 +97,16 @@ export default function EventTimeline({
             {/* Content */}
             <div className="flex-1 flex items-baseline justify-between gap-2 min-w-0">
               <span
-                className={event.isError ? 'font-medium' : ''}
+                className="font-body"
                 style={{
                   fontSize: 13,
+                  fontWeight: event.isError ? 500 : 400,
                   color: event.isError
-                    ? '#f87171'
-                    : 'var(--color-chat-text)',
+                    ? 'var(--color-bug)'
+                    : 'var(--color-text)',
                   lineHeight: 1.4,
                 }}
               >
-                <span className="mr-1.5">
-                  {eventEmojis[event.event] || '\u{1F4CB}'}
-                </span>
                 {event.description}
               </span>
 
@@ -123,7 +114,7 @@ export default function EventTimeline({
                 className="font-mono flex-shrink-0"
                 style={{
                   fontSize: 10,
-                  color: 'var(--color-chat-text-secondary)',
+                  color: 'var(--color-text-tertiary)',
                 }}
               >
                 {event.timestamp}
@@ -132,7 +123,6 @@ export default function EventTimeline({
           </motion.div>
         ))}
       </div>
-
     </motion.div>
   )
 }

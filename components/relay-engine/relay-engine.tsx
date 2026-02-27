@@ -24,19 +24,17 @@ export default function RelayEngine() {
   const [autoTriggered, setAutoTriggered] = useState(false)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
 
-  // Wait for client-side mount
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Listen for relay-engine:error events
+  // Listen for error events from the store
   useEffect(() => {
     function handleError(e: Event) {
       const detail = (e as CustomEvent).detail
       setHasError(true)
       setErrorMessage(detail?.message || 'An error occurred')
 
-      // After 1500ms, auto-open the chat panel
       setTimeout(() => {
         setAutoTriggered(true)
         setMode('chat')
@@ -52,11 +50,9 @@ export default function RelayEngine() {
     setMode((prev) => {
       if (prev === 'idle') return 'report'
       if (prev === 'report') return 'idle'
-      // If chat is open, close everything and reset
       return 'idle'
     })
 
-    // If we were in chat mode, reset everything
     if (mode === 'chat') {
       setElementContext(null)
       setHasError(false)

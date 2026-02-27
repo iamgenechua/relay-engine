@@ -11,12 +11,12 @@ interface FloatingBubbleProps {
 function ChatBubbleIcon() {
   return (
     <svg
-      width="22"
-      height="22"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -28,12 +28,12 @@ function ChatBubbleIcon() {
 function CrosshairIcon() {
   return (
     <svg
-      width="22"
-      height="22"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -51,23 +51,17 @@ export default function FloatingBubble({
   hasError,
   onClick,
 }: FloatingBubbleProps) {
-  const gradient = hasError
-    ? 'linear-gradient(135deg, #DC2626, #EF4444)'
+  const bgColor = hasError
+    ? 'var(--color-bug)'
     : isReportMode
-      ? 'linear-gradient(135deg, #0F766E, #0D9488)'
-      : 'linear-gradient(135deg, #1C1C1A, #2A2A27)'
-
-  const pulseGradient = hasError
-    ? 'radial-gradient(circle, rgba(220, 38, 38, 0.4), rgba(239, 68, 68, 0) 70%)'
-    : 'radial-gradient(circle, rgba(13, 148, 136, 0.3), rgba(13, 148, 136, 0) 70%)'
-
-  const pulseDuration = hasError ? 1.5 : 3
+      ? 'var(--color-accent)'
+      : 'var(--color-accent)'
 
   const ariaLabel = isReportMode
-    ? 'Report mode active — click to open Relay Engine'
+    ? 'Report mode active -- click to open support'
     : hasError
-      ? 'Error detected — click to open Relay Engine'
-      : 'Open Relay Engine'
+      ? 'Error detected -- click to open support'
+      : 'Open support'
 
   return (
     <motion.button
@@ -75,44 +69,46 @@ export default function FloatingBubble({
       aria-label={ariaLabel}
       initial={{ scale: 0, rotate: -180 }}
       animate={{ scale: 1, rotate: 0 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 20, mass: 1 }}
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.95 }}
+      transition={{ type: 'spring', stiffness: 220, damping: 22, mass: 1 }}
+      whileHover={{ scale: 1.06 }}
+      whileTap={{ scale: 0.94 }}
       className="fixed z-[9999] flex items-center justify-center"
       style={{
         bottom: 24,
         right: 24,
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         borderRadius: '50%',
-        background: gradient,
-        color: '#F0EFEC',
+        background: bgColor,
+        color: '#F8F7F4',
         border: 'none',
         cursor: 'pointer',
-        boxShadow: 'var(--shadow-bubble)',
+        boxShadow: '0 4px 20px rgba(45, 90, 61, 0.2)',
       }}
     >
-      {/* Breathing pulse ring */}
+      {/* Breathing pulse ring — elegant and slow */}
       <AnimatePresence>
         {!isReportMode && (
           <motion.div
             key="pulse"
             initial={{ opacity: 0, scale: 1 }}
             animate={{
-              opacity: [0, 0.6, 0],
-              scale: [1, 1.5, 1],
+              opacity: [0, 0.4, 0],
+              scale: [1, 1.4, 1],
             }}
             exit={{ opacity: 0 }}
             transition={{
-              duration: pulseDuration,
+              duration: hasError ? 2 : 4,
               repeat: Infinity,
               ease: 'easeInOut',
             }}
             style={{
               position: 'absolute',
-              inset: -8,
+              inset: -6,
               borderRadius: '50%',
-              background: pulseGradient,
+              background: hasError
+                ? 'radial-gradient(circle, rgba(155, 59, 59, 0.3), transparent 70%)'
+                : 'radial-gradient(circle, rgba(45, 90, 61, 0.2), transparent 70%)',
               pointerEvents: 'none',
             }}
           />

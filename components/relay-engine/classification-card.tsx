@@ -11,27 +11,18 @@ interface ClassificationCardProps {
 
 const themes = {
   bug: {
-    border: 'rgba(239, 68, 68, 0.4)',
-    bg: 'rgba(239, 68, 68, 0.1)',
-    text: '#f87171',
-    badgeBg: 'rgba(239, 68, 68, 0.2)',
-    emoji: '\u{1F41B}',
-    label: 'Bug Detected',
+    color: 'var(--color-bug)',
+    bg: 'var(--color-bug-bg)',
+    label: 'Bug',
   },
   edge_case: {
-    border: 'rgba(245, 158, 11, 0.4)',
-    bg: 'rgba(245, 158, 11, 0.1)',
-    text: '#fbbf24',
-    badgeBg: 'rgba(245, 158, 11, 0.2)',
-    emoji: '\u{1F50D}',
-    label: 'Edge Case Found',
+    color: 'var(--color-edge-case)',
+    bg: 'var(--color-edge-case-bg)',
+    label: 'Edge Case',
   },
   ux_issue: {
-    border: 'rgba(59, 130, 246, 0.4)',
-    bg: 'rgba(59, 130, 246, 0.1)',
-    text: '#60a5fa',
-    badgeBg: 'rgba(59, 130, 246, 0.2)',
-    emoji: '\u{1F3AF}',
+    color: 'var(--color-ux-issue)',
+    bg: 'var(--color-ux-issue-bg)',
     label: 'UX Issue',
   },
 } as const
@@ -67,37 +58,42 @@ export default function ClassificationCard({
         mass: 0.8,
       }}
       style={{
-        border: `1px solid ${theme.border}`,
-        background: theme.bg,
-        borderRadius: 12,
-        padding: 16,
+        background: 'rgba(255, 255, 255, 0.6)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid var(--color-border-subtle)',
+        borderRadius: 14,
+        padding: 18,
       }}
     >
-      {/* Badge pill */}
+      {/* Type label with dot */}
       <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{
-          delay: 0.2,
-          type: 'spring',
-          stiffness: 400,
-          damping: 20,
-        }}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          background: theme.badgeBg,
-          color: theme.text,
-          borderRadius: 9999,
-          padding: '4px 10px',
-          fontSize: 12,
-          fontWeight: 600,
-          marginBottom: 10,
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.3 }}
+        className="flex items-center gap-2"
+        style={{ marginBottom: 12 }}
       >
-        <span>{theme.emoji}</span>
-        <span>{theme.label}</span>
+        <span
+          style={{
+            display: 'block',
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            backgroundColor: theme.color,
+          }}
+        />
+        <span
+          className="font-body"
+          style={{
+            fontSize: 12,
+            fontWeight: 500,
+            color: theme.color,
+            letterSpacing: '0.03em',
+          }}
+        >
+          {theme.label}
+        </span>
       </motion.div>
 
       {/* Title */}
@@ -107,7 +103,7 @@ export default function ClassificationCard({
         style={{
           fontSize: 15,
           fontWeight: 600,
-          color: 'var(--color-chat-text)',
+          color: 'var(--color-text)',
           margin: 0,
           marginBottom: 6,
         }}
@@ -118,12 +114,13 @@ export default function ClassificationCard({
       {/* Summary */}
       <motion.p
         {...fade(0.4)}
+        className="font-body"
         style={{
           fontSize: 13,
           lineHeight: 1.625,
-          color: 'var(--color-chat-text-secondary)',
+          color: 'var(--color-text-secondary)',
           margin: 0,
-          marginBottom: 12,
+          marginBottom: 14,
         }}
       >
         {summary}
@@ -133,17 +130,18 @@ export default function ClassificationCard({
       <motion.div
         {...fade(0.5)}
         style={{
-          background: 'rgba(28, 28, 26, 0.5)',
+          background: 'var(--color-bg-subtle)',
           borderRadius: 8,
           padding: 12,
-          marginBottom: 12,
+          marginBottom: 14,
+          border: '1px solid var(--color-border-subtle)',
         }}
       >
         <p
           className="font-mono uppercase tracking-widest"
           style={{
             fontSize: 10,
-            color: 'var(--color-chat-text-secondary)',
+            color: 'var(--color-text-tertiary)',
             margin: 0,
             marginBottom: 6,
           }}
@@ -154,7 +152,7 @@ export default function ClassificationCard({
           className="font-mono"
           style={{
             fontSize: 12,
-            color: 'var(--color-chat-text)',
+            color: 'var(--color-text)',
             margin: 0,
             lineHeight: 1.5,
           }}
@@ -178,10 +176,10 @@ export default function ClassificationCard({
             damping: 25,
           }}
           style={{
-            width: 18,
-            height: 18,
+            width: 16,
+            height: 16,
             borderRadius: '50%',
-            background: '#10b981',
+            background: 'var(--color-accent)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -189,8 +187,8 @@ export default function ClassificationCard({
           }}
         >
           <svg
-            width="10"
-            height="10"
+            width="9"
+            height="9"
             viewBox="0 0 24 24"
             fill="none"
             stroke="white"
@@ -202,12 +200,13 @@ export default function ClassificationCard({
           </svg>
         </motion.div>
         <span
+          className="font-body"
           style={{
             fontSize: 12,
-            color: 'rgba(52, 211, 153, 0.8)',
+            color: 'var(--color-text-tertiary)',
           }}
         >
-          Reported to the team — you won&apos;t have to explain this again.
+          Reported to the team. You won&apos;t have to explain this again.
         </span>
       </motion.div>
     </motion.div>
