@@ -8,6 +8,25 @@ Non-technical users report bugs and request features with massive context loss. 
 
 Think: an agentic 24/7 CSM that genuinely understands the technical side.
 
+## The angles we're pushing
+
+If we're going to win, these are the things we lean into hard during the demo:
+
+**1. Direct component interaction (not just a chatbot)**
+The user doesn't open a generic chat widget and type "something broke." They click directly on the element that failed — and the chatbot opens *right there*, already knowing what they clicked. The element-level interaction is the first thing judges will notice. Nobody else will have this.
+
+**2. Context-aware investigation**
+The agent doesn't ask "what happened?" — it already knows. It reads the source code, checks the business rules, and sees the user's current state. It asks *smart follow-ups* on top of that existing context. The conversation starts at step 3, not step 0.
+
+**3. Session replay via PostHog**
+Before the user even says anything, the agent has their full event timeline — every page visit, every click, every API error. It synthesizes the sequence and uses it to determine whether this is actually a bug or expected behavior. This is the technical depth that separates us from a wrapper around GPT.
+
+**4. Empathetic CSM, not a fact-finder**
+This is not a triage bot. It's a customer success manager that genuinely cares about retaining the customer. "Your order is safe." "You haven't been charged." "You won't have to explain this again." The warmth is a deliberate product decision — non-technical users get assurance, not just classification. This is the spark of thoughtfulness that judges will remember.
+
+**5. Engineer dashboard (the payoff)**
+Everything the agent gathered — PostHog timeline, source code references, business rule checks, user conversation, final classification — lands on an engineer dashboard as a structured report. Zero information loss from user to eng. This is where we close the loop and show the full value chain.
+
 ## What's done
 
 I prepped all the frontend — a fake e-commerce store ("HONE") with two intentionally broken flows, and the full widget UI with glassmorphic chat panel, animations, element selection. Everything builds and runs. **No backend agent logic exists yet — that's our work tomorrow.**
