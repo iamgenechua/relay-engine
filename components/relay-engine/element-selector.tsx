@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -89,8 +89,6 @@ export default function ElementSelector({
     rect: DOMRect
     name: string
   } | null>(null)
-  const highlightRef = useRef(highlight)
-  highlightRef.current = highlight
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     const el = document.elementFromPoint(e.clientX, e.clientY)
@@ -157,7 +155,7 @@ export default function ElementSelector({
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
             style={{
               position: 'fixed',
               top: 16,
