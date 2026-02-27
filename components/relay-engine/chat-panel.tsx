@@ -23,19 +23,21 @@ interface ChatPanelProps {
   errorMessage?: string
 }
 
+const easeCurve: [number, number, number, number] = [0.22, 1, 0.36, 1]
+
 const panelVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.4, ease: easeCurve },
   },
   exit: {
     opacity: 0,
     y: 20,
     scale: 0.95,
-    transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.25, ease: easeCurve },
   },
 }
 
@@ -44,7 +46,7 @@ const messageVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.3, ease: easeCurve },
   },
 }
 
