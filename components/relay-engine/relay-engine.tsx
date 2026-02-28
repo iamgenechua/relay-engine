@@ -163,7 +163,7 @@ export default function RelayEngine() {
         onClick={handleBubbleClick}
       />
       <ElementSelector
-        isActive={mode === 'report'}
+        isActive={mode === 'report' && !isChatOpen}
         onElementSelect={handleElementSelect}
       />
       <ChatPanel

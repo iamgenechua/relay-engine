@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from collections.abc import AsyncGenerator
 
@@ -9,6 +10,8 @@ from openai import AsyncOpenAI
 from agent.config import OPENAI_API_KEY
 from agent.models import ChatMessage, FDERequest
 from agent.tools import TOOL_DEFINITIONS, execute_tool
+
+logger = logging.getLogger("relay")
 
 MAX_STEPS = 5
 
@@ -92,6 +95,7 @@ def _data(payload: dict | str) -> str:
 
 
 async def run_fde_stream(req: FDERequest) -> AsyncGenerator[str, None]:
+    logger.info("[stream] Starting agent loop")
     system_prompt = build_system_prompt(req)
     message_id = f"msg_{uuid.uuid4().hex[:12]}"
 
@@ -115,6 +119,7 @@ async def run_fde_stream(req: FDERequest) -> AsyncGenerator[str, None]:
         for _step in range(MAX_STEPS):
             yield _data({"type": "start-step"})
 
+            logger.info("[stream] Step %d — calling OpenAI (%d messages)", _step + 1, len(openai_messages))
             stream = await client.chat.completions.create(
                 model="gpt-4.1",
                 messages=openai_messages,
@@ -209,6 +214,7 @@ async def run_fde_stream(req: FDERequest) -> AsyncGenerator[str, None]:
                     "input": arguments,
                 })
 
+                logger.info("[stream] Executing tool %s(%s)", tool_name, json.dumps(arguments)[:200])
                 result = await execute_tool(
                     tool_name,
                     arguments,
@@ -236,7 +242,9 @@ async def run_fde_stream(req: FDERequest) -> AsyncGenerator[str, None]:
                 break
 
     except Exception as e:
+        logger.error("[stream] Error: %s", e, exc_info=True)
         yield _data({"type": "error", "error": str(e)})
 
+    logger.info("[stream] Done — messageId=%s", message_id)
     yield _data({"type": "finish", "finishReason": "stop"})
     yield "data: [DONE]\n\n"

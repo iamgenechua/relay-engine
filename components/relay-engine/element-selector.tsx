@@ -142,7 +142,7 @@ export default function ElementSelector({
   if (typeof window === 'undefined') return null
 
   return createPortal(
-    <>
+    <div data-relay-engine>
       {/* Mode indicator banner */}
       <AnimatePresence>
         {isActive && (
@@ -230,7 +230,7 @@ export default function ElementSelector({
           </motion.div>
         )}
       </AnimatePresence>
-    </>,
+    </div>,
     document.body
   )
 }

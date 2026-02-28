@@ -221,9 +221,11 @@ export default function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
 
+  const apiUrl = `${process.env.NEXT_PUBLIC_FDE_URL || 'http://localhost:8000'}/api/fde/stream`
+
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
-      api: `${process.env.NEXT_PUBLIC_FDE_URL || 'http://localhost:8000'}/api/fde/stream`,
+      api: apiUrl,
       body: {
         elementContext,
         autoTriggered,
@@ -233,9 +235,17 @@ export default function ChatPanel({
         pageSnapshot: capturePageSnapshot(),
       },
     }),
+    onError: (error) => {
+      console.error('[relay] Chat error:', error)
+    },
   })
 
   const isLoading = status === 'submitted' || status === 'streaming'
+
+  // Log status changes
+  useEffect(() => {
+    console.log('[relay] Chat status:', status, '| API:', apiUrl, '| messages:', messages.length)
+  }, [status, apiUrl, messages.length])
 
   // Compute anchored position when panel opens
   useEffect(() => {
@@ -262,7 +272,9 @@ export default function ChatPanel({
     const form = e.currentTarget
     const input = form.elements.namedItem('message') as HTMLInputElement
     const value = input.value.trim()
+    console.log('[relay] handleSubmit fired — value:', JSON.stringify(value), '| isLoading:', isLoading)
     if (!value || isLoading) return
+    console.log('[relay] Sending message:', value.slice(0, 100))
     sendMessage({ text: value })
     input.value = ''
   }
@@ -280,6 +292,7 @@ export default function ChatPanel({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          data-relay-engine
           key="chat-panel"
           variants={panelVariants}
           initial="hidden"

@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -13,6 +14,12 @@ from dotenv import load_dotenv
 
 # Load .env.local before any agent imports read os.environ
 load_dotenv(Path(__file__).resolve().parent / ".env.local")
+
+# Configure logging — Railway captures stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

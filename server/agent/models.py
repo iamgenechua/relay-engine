@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # -- Request schema ----------------------------------------------------------
@@ -29,7 +29,21 @@ class LogEntry(BaseModel):
 
 class ChatMessage(BaseModel):
     role: str
-    content: str
+    content: str = ""
+    parts: list[dict] = Field(default_factory=list)
+    id: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_content_from_parts(cls, values: dict) -> dict:
+        """Vercel AI SDK sends parts instead of content. Extract text from parts."""
+        if not values.get("content") and values.get("parts"):
+            texts = [
+                p["text"] for p in values["parts"]
+                if isinstance(p, dict) and p.get("type") == "text" and p.get("text")
+            ]
+            values["content"] = "\n".join(texts)
+        return values
 
 
 class FDERequest(BaseModel):
