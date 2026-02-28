@@ -10,6 +10,7 @@ import { posthog } from '@/lib/posthog'
 import { getBufferedEvents, capturePageSnapshot } from '@/lib/relay-collector'
 import EventTimeline from '@/components/relay-engine/event-timeline'
 import ClassificationCard from '@/components/relay-engine/classification-card'
+import ActionCard from '@/components/relay-engine/action-card'
 
 interface ChatPanelProps {
   isOpen: boolean
@@ -159,6 +160,28 @@ function parseClassification(messages: any[]) {
   return null
 }
 
+function parseActions(messages: any[]): PendingAction[] {
+  const actions: PendingAction[] = []
+  for (const msg of messages) {
+    if (msg.role === 'assistant' && msg.parts) {
+      for (const part of msg.parts as any[]) {
+        if (
+          part.type === 'dynamic-tool' &&
+          part.state === 'output-available' &&
+          part.output?.type === 'require-action'
+        ) {
+          actions.push({
+            toolCallId: part.output.toolCallId,
+            toolName: part.output.toolName,
+            input: part.output.input,
+          })
+        }
+      }
+    }
+  }
+  return actions
+}
+
 function getMessageText(msg: any): string {
   if (!msg.parts) return msg.content || ''
   const text = msg.parts
@@ -166,6 +189,12 @@ function getMessageText(msg: any): string {
     .map((p: any) => p.text)
     .join('')
   return text || msg.content || ''
+}
+
+interface PendingAction {
+  toolCallId: string
+  toolName: string
+  input: Record<string, unknown>
 }
 
 function SendIcon() {
@@ -221,6 +250,7 @@ export default function ChatPanel({
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -274,6 +304,13 @@ export default function ChatPanel({
     }
   }, [messages])
 
+  useEffect(() => {
+    const actions = parseActions(messages)
+    if (actions.length > 0) {
+      setPendingActions(actions)
+    }
+  }, [messages])
+
   const visibleMessages = messages.filter((msg) => {
     const text = getMessageText(msg)
     return text.trim().length > 0
@@ -289,6 +326,72 @@ export default function ChatPanel({
     console.log('[relay] Sending message:', value.slice(0, 100))
     sendMessage({ text: value })
     input.value = ''
+  }
+
+  const TOOL_ROUTES: Record<string, (input: Record<string, unknown>) => { method: string; url: string; body?: unknown }> = {
+    getOrders: () => ({ method: 'GET', url: '/api/orders' }),
+    getOrder: (input) => ({ method: 'GET', url: `/api/orders/${input.orderId}` }),
+    getProducts: () => ({ method: 'GET', url: '/api/products' }),
+    updateOrderStatus: (input) => ({
+      method: 'PATCH',
+      url: `/api/orders/${input.orderId}/status`,
+      body: { status: input.newStatus },
+    }),
+    checkout: (input) => ({
+      method: 'POST',
+      url: '/api/checkout',
+      body: { items: input.items, customerName: input.customerName, customerEmail: input.customerEmail },
+    }),
+  }
+
+  async function handleActionApprove(toolCallId: string, toolName: string, input: Record<string, unknown>) {
+    const routeFn = TOOL_ROUTES[toolName]
+    if (!routeFn) {
+      console.error('[relay] Unknown tool:', toolName)
+      return
+    }
+
+    const { method, url, body } = routeFn(input)
+
+    try {
+      const res = await fetch(url, {
+        method,
+        ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
+      })
+      const result = await res.json()
+
+      sendMessage({
+        text: JSON.stringify({
+          type: 'tool-result',
+          toolCallId,
+          toolName,
+          result,
+        }),
+      })
+    } catch (err) {
+      console.error('[relay] Action execution failed:', err)
+      sendMessage({
+        text: JSON.stringify({
+          type: 'tool-result',
+          toolCallId,
+          toolName,
+          result: { error: 'Action execution failed' },
+        }),
+      })
+    } finally {
+      setPendingActions((prev) => prev.filter((a) => a.toolCallId !== toolCallId))
+    }
+  }
+
+  function handleActionDeny(toolCallId: string) {
+    sendMessage({
+      text: JSON.stringify({
+        type: 'tool-result',
+        toolCallId,
+        result: { denied: true, reason: 'User declined' },
+      }),
+    })
+    setPendingActions((prev) => prev.filter((a) => a.toolCallId !== toolCallId))
   }
 
   // Random gradient blob positions (stable per mount)
@@ -509,6 +612,19 @@ export default function ChatPanel({
                   />
                 </div>
               )}
+
+              {/* Action approval cards */}
+              {pendingActions.map((action) => (
+                <div key={action.toolCallId} style={{ padding: '4px 0' }}>
+                  <ActionCard
+                    toolName={action.toolName}
+                    toolCallId={action.toolCallId}
+                    input={action.input}
+                    onApprove={handleActionApprove}
+                    onDeny={handleActionDeny}
+                  />
+                </div>
+              ))}
 
               {/* Loading indicator */}
               {isLoading && (
