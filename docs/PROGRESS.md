@@ -24,10 +24,7 @@ Full event timeline before the user says anything — every page visit, click, A
 **4. Empathetic CSM, not a fact-finder**
 Not a triage bot. "Your order is safe." "You haven't been charged." "You won't have to explain this again." The warmth is a deliberate product decision — non-technical users get assurance, not just classification.
 
-**5. Voice input (ElevenLabs)**
-The user is frustrated — they don't want to type. They just talk. Same pipeline underneath, but the form factor change is a delighter. I have a bunch of ElevenLabs credits we can use.
-
-**6. Engineer dashboard (the payoff)**
+**5. Engineer dashboard (the payoff)**
 Everything the agent gathered — PostHog timeline, source code references, business rule checks, user conversation, final classification — lands as a structured report. Zero information loss from user to eng.
 
 ## What I've built so far
@@ -45,9 +42,10 @@ Next.js 16 (App Router) / Tailwind v4 (`@theme inline`, not config file) / Verce
 ```
 Store (HONE)                    Widget (Relay Engine)              Agent API
 ─────────────                   ──────────────────────             ──────────
-/orders, /cart                  Floating bubble                    POST /api/chat
-Two broken flows                Element selector overlay           streamText + tools
-Dispatch CustomEvents           Glassmorphic chat panel            ├─ getUserEvents (PostHog)
+/ (shop + cart drawer)          Floating bubble                    POST /api/chat
+/orders, /orders/[id]           Element selector overlay           streamText + tools
+Two broken flows                Glassmorphic chat panel            ├─ getUserEvents (PostHog)
+Dispatch CustomEvents
 on errors                       ├─ useChat hook → /api/chat       ├─ readSourceFile (codebase)
                                 ├─ Event timeline (animated)       ├─ searchBusinessRules (MD)
                                 └─ Classification card (verdict)   └─ classifyIssue (saves report)
@@ -56,9 +54,9 @@ on errors                       ├─ useChat hook → /api/chat       ├─ r
 
 ## The two demo flows
 
-**Flow 1 — UX Issue:** `/orders/ORD-001` (status: pending). UI shows ALL status buttons including "Shipped". API rejects pending→shipped with `ERR_INVALID_TRANSITION`. Agent reads code + business rules → classifies as UX Issue.
+**Flow 1 — UX Issue:** `/orders/ORD-001` (status: pending). User clicks "Request Shipping" — API rejects pending→shipped with `ERR_INVALID_TRANSITION`. Agent reads code + business rules → classifies as UX Issue.
 
-**Flow 2 — Edge Case:** `/cart`. "Desk Mat" has 0 stock but UI lets you add to cart. Checkout fails with `STOCK_INSUFFICIENT`. Agent classifies as Edge Case (race condition, no cart reservation).
+**Flow 2 — Edge Case:** `/` (home page). "Desk Mat" has 0 stock but "Add to Cart" button is enabled. User adds to cart, opens drawer, clicks Checkout → fails with `STOCK_INSUFFICIENT`. Agent classifies as Edge Case (race condition, no cart reservation).
 
 Both flows dispatch `CustomEvent('relay-engine:error')` — the widget auto-triggers on these.
 
@@ -74,7 +72,6 @@ The backend/agent layer. Here's what I've scoped out so far — happy to discuss
 | **Agent API route** | `app/api/chat/route.ts` | `streamText()` with OpenAI + tools + `maxSteps: 5` |
 | Report store | `lib/store.ts`, `app/api/reports/route.ts` | In-memory. `classifyIssue` tool saves here |
 | Dashboard | `app/reports/page.tsx` | Report cards with classification, expandable details |
-| Voice input | TBD | ElevenLabs STT → feed into same chat pipeline |
 | Deploy | Vercel | Env vars: `OPENAI_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` |
 
 ## How the frontend connects to the agent
@@ -92,7 +89,7 @@ npm install
 npm run dev
 ```
 
-Try the broken flows, click the green bubble, enter report mode, click an element.
+Try the broken flows: "Request Shipping" on `/orders/ORD-001`, or add Desk Mat to cart and checkout. Click the green bubble to enter report mode and click an element.
 
 ## Open questions
 
@@ -100,7 +97,6 @@ Try the broken flows, click the green bubble, enter report mode, click an elemen
 - System prompt tuning — there's a draft in the design doc but should iterate live
 - How many tool calls / follow-up questions feel right for demo pacing
 - Dashboard: how much polish vs time on the agent itself
-- Voice: where to slot ElevenLabs in (input only, or output too?)
 
 ## Reference docs
 
