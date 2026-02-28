@@ -2,14 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
-const NAV_ITEMS = [
-  { href: '/orders', label: 'Orders' },
-  { href: '/cart', label: 'Cart' },
-]
+import { useCart } from '@/lib/cart-context'
 
 export function Nav() {
   const pathname = usePathname()
+  const { openDrawer, totalItems } = useCart()
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-md">
@@ -22,20 +19,29 @@ export function Nav() {
           HONE
         </Link>
         <div className="flex items-center gap-6">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`font-body text-sm font-normal transition-colors ${
-                pathname.startsWith(item.href)
-                  ? 'text-text'
-                  : 'text-text-tertiary hover:text-text'
-              }`}
-              style={{ letterSpacing: '0.04em' }}
-            >
-              {item.label}
-            </Link>
-          ))}
+          <Link
+            href="/orders"
+            className={`font-body text-sm font-normal transition-colors ${
+              pathname.startsWith('/orders')
+                ? 'text-text'
+                : 'text-text-tertiary hover:text-text'
+            }`}
+            style={{ letterSpacing: '0.04em' }}
+          >
+            Orders
+          </Link>
+          <button
+            onClick={openDrawer}
+            className="relative font-body text-sm font-normal text-text-tertiary transition-colors hover:text-text"
+            style={{ letterSpacing: '0.04em' }}
+          >
+            Cart
+            {totalItems > 0 && (
+              <span className="absolute -right-3.5 -top-2 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-white">
+                {totalItems}
+              </span>
+            )}
+          </button>
         </div>
       </div>
     </nav>

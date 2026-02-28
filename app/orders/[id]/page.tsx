@@ -6,20 +6,18 @@ import { useState, useEffect } from 'react'
 import { MOCK_ORDERS } from '@/lib/mock-data'
 import { Order, OrderStatus } from '@/lib/types'
 
-const ALL_STATUSES: OrderStatus[] = [
-  'pending',
-  'processing',
-  'shipped',
-  'delivered',
-  'cancelled',
-]
-
 const STATUS_CONFIG: Record<OrderStatus, { color: string; label: string }> = {
   pending: { color: 'var(--color-status-pending)', label: 'Pending' },
   processing: { color: 'var(--color-status-processing)', label: 'Processing' },
   shipped: { color: 'var(--color-status-shipped)', label: 'Shipped' },
   delivered: { color: 'var(--color-status-delivered)', label: 'Delivered' },
   cancelled: { color: 'var(--color-status-cancelled)', label: 'Cancelled' },
+}
+
+interface ActionConfig {
+  label: string
+  onClick: () => void
+  variant: 'primary' | 'secondary' | 'danger'
 }
 
 export default function OrderDetailPage() {
@@ -86,8 +84,67 @@ export default function OrderDetailPage() {
     }
   }
 
-  const availableStatuses = ALL_STATUSES.filter((s) => s !== order.status)
   const currentStatus = STATUS_CONFIG[order.status]
+
+  function getActions(): ActionConfig[] {
+    switch (order!.status) {
+      case 'pending':
+        return [
+          {
+            label: 'Request Shipping',
+            onClick: () => handleStatusChange('shipped'),
+            variant: 'primary',
+          },
+          {
+            label: 'Cancel Order',
+            onClick: () => handleStatusChange('cancelled'),
+            variant: 'danger',
+          },
+        ]
+      case 'processing':
+        return [
+          {
+            label: 'Track Package',
+            onClick: () => {},
+            variant: 'primary',
+          },
+          {
+            label: 'Cancel Order',
+            onClick: () => handleStatusChange('cancelled'),
+            variant: 'danger',
+          },
+        ]
+      case 'shipped':
+        return [
+          {
+            label: 'Track Package',
+            onClick: () => {},
+            variant: 'primary',
+          },
+        ]
+      case 'delivered':
+        return [
+          {
+            label: 'Return Items',
+            onClick: () => {},
+            variant: 'secondary',
+          },
+        ]
+      default:
+        return []
+    }
+  }
+
+  const actions = getActions()
+
+  const variantClasses: Record<string, string> = {
+    primary:
+      'bg-accent text-white hover:bg-accent-dark',
+    secondary:
+      'border border-border text-text-secondary hover:border-accent hover:text-accent',
+    danger:
+      'border border-border text-text-secondary hover:border-red-400 hover:text-red-600',
+  }
 
   return (
     <div>
@@ -120,13 +177,6 @@ export default function OrderDetailPage() {
               Order{' '}
               <span className="font-mono text-lg text-accent">{order.id}</span>
             </h1>
-            <p className="mt-2 font-body text-sm text-text-secondary">
-              {order.customerName}
-              <span className="mx-2 text-text-tertiary">/</span>
-              <span className="text-text-tertiary">
-                {order.customerEmail}
-              </span>
-            </p>
             <p className="mt-1 font-body text-xs text-text-tertiary">
               Placed{' '}
               {new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -153,34 +203,33 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Update status */}
-      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 shadow-sm mb-6">
-        <h2 className="font-display text-lg font-medium text-text mb-5">
-          Update Status
-        </h2>
+      {/* Actions */}
+      {actions.length > 0 && (
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 shadow-sm mb-6">
+          <h2 className="font-display text-lg font-medium text-text mb-5">
+            Actions
+          </h2>
 
-        {error && (
-          <div className="mb-5 rounded-[var(--radius-md)] border border-border bg-bg-subtle px-5 py-4">
-            <p className="font-body text-sm text-text">{error}</p>
-          </div>
-        )}
+          {error && (
+            <div className="mb-5 rounded-[var(--radius-md)] border border-border bg-bg-subtle px-5 py-4">
+              <p className="font-body text-sm text-text">{error}</p>
+            </div>
+          )}
 
-        <div className="flex flex-wrap gap-2">
-          {availableStatuses.map((status) => {
-            const config = STATUS_CONFIG[status]
-            return (
+          <div className="flex flex-wrap gap-3">
+            {actions.map((action) => (
               <button
-                key={status}
-                onClick={() => handleStatusChange(status)}
+                key={action.label}
+                onClick={action.onClick}
                 disabled={isUpdating}
-                className="rounded-[var(--radius-md)] border border-border px-4 py-2.5 font-body text-sm font-normal text-text-secondary transition-all hover:border-accent hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                className={`rounded-[var(--radius-md)] px-5 py-2.5 font-body text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${variantClasses[action.variant]}`}
               >
-                {isUpdating ? '...' : config.label}
+                {isUpdating ? '...' : action.label}
               </button>
-            )
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Items */}
       <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-8 shadow-sm">

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { EB_Garamond, Outfit, JetBrains_Mono } from 'next/font/google'
 import { Nav } from '@/components/nav'
+import { CartProvider } from '@/lib/cart-context'
+import { CartDrawer } from '@/components/cart-drawer'
 import RelayEngine from '@/components/relay-engine/relay-engine'
 import "./globals.css";
 
@@ -35,12 +37,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${ebGaramond.variable} ${outfit.variable} ${jetbrainsMono.variable}`}>
       <body>
-        <div className="grain-overlay" aria-hidden="true" />
-        <Nav />
-        <main className="mx-auto max-w-5xl px-6 py-8">
-          {children}
-        </main>
-        <RelayEngine />
+        <CartProvider>
+          <div className="grain-overlay" aria-hidden="true" />
+          <Nav />
+          <main className="mx-auto max-w-5xl px-6 py-8">
+            {children}
+          </main>
+          <CartDrawer />
+          <RelayEngine />
+        </CartProvider>
       </body>
     </html>
   );

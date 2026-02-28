@@ -22,76 +22,54 @@ export default function OrdersPage() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-sm">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border-subtle">
-              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
-                Order
-              </th>
-              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
-                Customer
-              </th>
-              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
-                Status
-              </th>
-              <th className="px-6 py-4 text-left font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
-                Items
-              </th>
-              <th className="px-6 py-4 text-right font-body text-xs font-medium uppercase tracking-wider text-text-tertiary">
-                Total
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-subtle">
-            {MOCK_ORDERS.map((order) => {
-              const status = STATUS_CONFIG[order.status]
-              return (
-                <tr
-                  key={order.id}
-                  className="transition-colors hover:bg-bg-subtle/50"
-                >
-                  <td className="px-6 py-5">
-                    <Link
-                      href={`/orders/${order.id}`}
-                      className="font-mono text-sm font-medium text-accent transition-colors hover:text-accent-dark"
-                    >
-                      {order.id}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="font-body text-sm text-text">
-                      {order.customerName}
-                    </div>
-                    <div className="font-body text-xs text-text-tertiary">
-                      {order.customerEmail}
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="block h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: status.color }}
-                      />
-                      <span
-                        className="font-body text-sm"
-                        style={{ color: status.color }}
-                      >
-                        {status.label}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 font-body text-sm text-text-secondary">
-                    {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
-                  </td>
-                  <td className="px-6 py-5 text-right font-mono text-sm font-medium text-text">
-                    ${order.total.toFixed(2)}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {MOCK_ORDERS.map((order) => {
+          const status = STATUS_CONFIG[order.status]
+          const date = new Date(order.createdAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+
+          return (
+            <Link
+              key={order.id}
+              href={`/orders/${order.id}`}
+              className="group rounded-[var(--radius-lg)] border border-border bg-surface p-6 shadow-sm transition-all hover:shadow-md hover:border-accent/30"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <span className="font-mono text-sm font-medium text-accent group-hover:text-accent-dark transition-colors">
+                  {order.id}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="block h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: status.color }}
+                  />
+                  <span
+                    className="font-body text-xs font-medium"
+                    style={{ color: status.color }}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+              </div>
+
+              <p className="font-body text-xs text-text-tertiary mb-4">
+                {date}
+              </p>
+
+              <div className="flex items-center justify-between">
+                <span className="font-body text-sm text-text-secondary">
+                  {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
+                </span>
+                <span className="font-mono text-sm font-medium text-text">
+                  ${order.total.toFixed(2)}
+                </span>
+              </div>
+            </Link>
+          )
+        })}
       </div>
     </div>
   )
