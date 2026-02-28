@@ -3,10 +3,20 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { initPostHog, posthog } from '@/lib/posthog'
+import { sendEvent } from '@/lib/relay-collector'
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initPostHog()
+
+    if (posthog.__loaded) {
+      posthog.on('eventCaptured', sendEvent)
+    }
+
+    return () => {
+      // posthog-js doesn't expose removeListener, but the callback
+      // is a no-op when SERVER_URL is empty and safe to leave attached
+    }
   }, [])
 
   const pathname = usePathname()

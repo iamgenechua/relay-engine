@@ -7,6 +7,8 @@ import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { TimelineEvent } from '@/lib/types'
 import { posthog } from '@/lib/posthog'
+import { sendContext, getSessionId, getDistinctId, capturePageSnapshot } from '@/lib/relay-collector'
+import type { RelayContext } from '@/lib/relay-collector'
 import EventTimeline from '@/components/relay-engine/event-timeline'
 import ClassificationCard from '@/components/relay-engine/classification-card'
 
@@ -219,6 +221,8 @@ export default function ChatPanel({
 }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
+  const prevStatusRef = useRef<string>('')
+  const classificationSentRef = useRef(false)
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -234,11 +238,13 @@ export default function ChatPanel({
 
   const isLoading = status === 'submitted' || status === 'streaming'
 
-  // Compute anchored position when panel opens
+  // Compute anchored position when panel opens + reset refs
   useEffect(() => {
     if (isOpen) {
       const box = elementContext?.boundingBox ?? null
       setPosStyle(computePosition(box))
+      classificationSentRef.current = false
+      prevStatusRef.current = ''
     }
   }, [isOpen, elementContext])
 
@@ -247,7 +253,63 @@ export default function ChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
+  const buildContext = useCallback((): RelayContext => {
+    const conversation = messages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: getMessageText(m) }))
+      .filter((m) => m.content.length > 0)
+
+    const trigger: RelayContext['trigger'] = autoTriggered
+      ? 'error_auto'
+      : elementContext
+        ? 'element_select'
+        : 'manual_chat'
+
+    return {
+      sessionId: getSessionId(),
+      distinctId: getDistinctId(),
+      sessionStartedAt: new Date().toISOString(),
+      currentUrl: window.location.href,
+      currentPath: window.location.pathname,
+      userAgent: navigator.userAgent,
+      screenSize: { width: window.innerWidth, height: window.innerHeight },
+      elementContext: elementContext
+        ? {
+            elementName: elementContext.elementName,
+            cssSelector: elementContext.cssSelector,
+            visibleText: elementContext.visibleText,
+            boundingBox: elementContext.boundingBox
+              ? { top: elementContext.boundingBox.top, left: elementContext.boundingBox.left, width: elementContext.boundingBox.width, height: elementContext.boundingBox.height }
+              : null,
+          }
+        : null,
+      errorContext: errorMessage ? { message: errorMessage, autoTriggered: !!autoTriggered } : null,
+      conversation,
+      pageSnapshot: capturePageSnapshot(),
+      trigger,
+    }
+  }, [messages, elementContext, errorMessage, autoTriggered])
+
+  // Send context when assistant response completes (streaming → ready)
+  useEffect(() => {
+    const wasStreaming = prevStatusRef.current === 'streaming' || prevStatusRef.current === 'submitted'
+    const isReady = status === 'ready'
+    prevStatusRef.current = status
+
+    if (wasStreaming && isReady && messages.length > 0) {
+      sendContext(buildContext())
+    }
+  }, [status, messages, buildContext])
+
   const classification = parseClassification(messages)
+
+  // Send context when classification is first detected
+  useEffect(() => {
+    if (classification && !classificationSentRef.current) {
+      classificationSentRef.current = true
+      sendContext(buildContext())
+    }
+  }, [classification, buildContext])
 
   const visibleMessages = messages.filter((msg) => {
     const text = getMessageText(msg)
