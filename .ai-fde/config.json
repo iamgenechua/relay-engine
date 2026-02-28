@@ -1,0 +1,11 @@
+{
+  "project": "relay-engine",
+  "frontendDir": ".",
+  "backendDir": "server",
+  "apiBaseUrl": "https://relay-engine-production.up.railway.app",
+  "frontendOutputDir": "frontend",
+  "backendOutputDir": "backend",
+  "backendPrefix": "server/",
+  "version": 1,
+  "updatedAt": "2026-02-28T07:05:14.015Z"
+}

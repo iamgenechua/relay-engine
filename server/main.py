@@ -11,6 +11,7 @@ from agent import router as fde_router
 from codebase import router as codebase_router
 
 from dotenv import load_dotenv
+from aifde_backend import install_aifde_backend
 
 # Load .env.local before any agent imports read os.environ
 load_dotenv(Path(__file__).resolve().parent / ".env.local")
@@ -30,6 +31,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Relay Engine API", lifespan=lifespan)
 
+install_aifde_backend(app, project_name="relay-engine", relay_api_base="https://relay-engine-production.up.railway.app")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

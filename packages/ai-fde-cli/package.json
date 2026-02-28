@@ -1,0 +1,21 @@
+{
+  "name": "@jacobchia/ai-fde",
+  "version": "0.1.1",
+  "description": "CLI to instrument frontend/backend apps and upload code snapshots to Relay Engine.",
+  "type": "module",
+  "bin": {
+    "ai-fde": "./bin/ai-fde.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node ./bin/ai-fde.js",
+    "lint": "node ./bin/ai-fde.js --help"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
