@@ -226,7 +226,7 @@ export default function ChatPanel({
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
-      api: '/api/chat',
+      api: `${process.env.NEXT_PUBLIC_FDE_URL || 'http://localhost:8000'}/api/fde/stream`,
       body: {
         elementContext,
         autoTriggered,

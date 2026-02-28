@@ -37,7 +37,7 @@ export default function ReportsPage() {
 
     async function poll() {
       try {
-        const res = await fetch('/api/reports')
+        const res = await fetch(`${process.env.NEXT_PUBLIC_FDE_URL || 'http://localhost:8000'}/api/fde/reports`)
         if (res.ok && active) {
           setReports(await res.json())
         }
