@@ -33,27 +33,23 @@ export interface RelayContext {
   trigger: 'error_auto' | 'element_select' | 'manual_chat'
 }
 
-export function sendEvent(event: unknown): void {
-  if (!SERVER_URL) return
-  try {
-    fetch(`${SERVER_URL}/ingest/event`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event),
-      keepalive: true,
-    }).catch(() => {})
-  } catch {
-    // never break the app
+const MAX_BUFFERED_EVENTS = 500
+const eventBuffer: unknown[] = []
+
+export function bufferEvent(event: unknown): void {
+  eventBuffer.push(event)
+  if (eventBuffer.length > MAX_BUFFERED_EVENTS) {
+    eventBuffer.shift()
   }
 }
 
 export function sendContext(context: RelayContext): void {
   if (!SERVER_URL) return
   try {
-    fetch(`${SERVER_URL}/ingest/context`, {
+    fetch(`${SERVER_URL}/ingest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(context),
+      body: JSON.stringify({ ...context, recentEvents: [...eventBuffer] }),
       keepalive: true,
     }).catch(() => {})
   } catch {

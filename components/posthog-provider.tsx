@@ -3,14 +3,14 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { initPostHog, posthog } from '@/lib/posthog'
-import { sendEvent } from '@/lib/relay-collector'
+import { bufferEvent } from '@/lib/relay-collector'
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initPostHog()
 
     if (posthog.__loaded) {
-      posthog.on('eventCaptured', sendEvent)
+      posthog.on('eventCaptured', bufferEvent)
     }
 
     return () => {
