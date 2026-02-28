@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { MOCK_ORDERS } from '@/lib/mock-data'
 import { Order, OrderStatus } from '@/lib/types'
 
 const STATUS_CONFIG: Record<OrderStatus, { color: string; label: string }> = {
@@ -24,15 +23,29 @@ export default function OrderDetailPage() {
   const params = useParams()
   const id = params.id as string
 
-  const initialOrder = MOCK_ORDERS.find((o) => o.id === id)
-  const [order, setOrder] = useState<Order | null>(initialOrder ?? null)
+  const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const found = MOCK_ORDERS.find((o) => o.id === id)
-    if (found) setOrder(found)
+    fetch(`/api/orders/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Order not found')
+        return res.json()
+      })
+      .then((data) => setOrder(data.order))
+      .catch(() => setOrder(null))
+      .finally(() => setLoading(false))
   }, [id])
+
+  if (loading) {
+    return (
+      <div className="py-20 text-center">
+        <p className="font-body text-sm text-text-tertiary">Loading order...</p>
+      </div>
+    )
+  }
 
   if (!order) {
     return (

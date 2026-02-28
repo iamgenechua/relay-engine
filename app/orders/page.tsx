@@ -1,6 +1,8 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { MOCK_ORDERS } from '@/lib/mock-data'
-import { OrderStatus } from '@/lib/types'
+import { Order, OrderStatus } from '@/lib/types'
 
 const STATUS_CONFIG: Record<OrderStatus, { color: string; label: string }> = {
   pending: { color: 'var(--color-status-pending)', label: 'Pending' },
@@ -11,6 +13,25 @@ const STATUS_CONFIG: Record<OrderStatus, { color: string; label: string }> = {
 }
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/orders')
+      .then((res) => res.json())
+      .then((data) => setOrders(data.orders))
+      .catch((err) => console.error('Failed to load orders:', err))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="py-20 text-center">
+        <p className="font-body text-sm text-text-tertiary">Loading orders...</p>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="mb-10">
@@ -23,7 +44,7 @@ export default function OrdersPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {MOCK_ORDERS.map((order) => {
+        {orders.map((order) => {
           const status = STATUS_CONFIG[order.status]
           const date = new Date(order.createdAt).toLocaleDateString('en-US', {
             month: 'short',

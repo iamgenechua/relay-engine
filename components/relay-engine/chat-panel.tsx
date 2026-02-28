@@ -222,11 +222,9 @@ export default function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({})
 
-  const apiUrl = `${process.env.NEXT_PUBLIC_FDE_URL || 'http://localhost:8000'}/api/fde/stream`
-
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
-      api: apiUrl,
+      api: '/api/chat',
       body: {
         elementContext,
         autoTriggered,
@@ -245,8 +243,8 @@ export default function ChatPanel({
 
   // Log status changes
   useEffect(() => {
-    console.log('[relay] Chat status:', status, '| API:', apiUrl, '| messages:', messages.length)
-  }, [status, apiUrl, messages.length])
+    console.log('[relay] Chat status:', status, '| messages:', messages.length)
+  }, [status, messages.length])
 
   // Compute anchored position when panel opens
   useEffect(() => {

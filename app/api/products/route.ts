@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server'
-import { MOCK_PRODUCTS } from '@/lib/mock-data'
+import { sql } from '@/lib/db'
 
 export async function GET() {
-  return NextResponse.json({ products: MOCK_PRODUCTS })
+  const { rows } = await sql`SELECT id, name, price, stock FROM products ORDER BY id`
+
+  const products = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    price: parseFloat(r.price),
+    stock: r.stock,
+  }))
+
+  return NextResponse.json({ products })
 }

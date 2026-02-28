@@ -1,11 +1,36 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { MOCK_PRODUCTS } from '@/lib/mock-data'
 import { useCart } from '@/lib/cart-context'
+
+interface Product {
+  id: string
+  name: string
+  price: number
+  stock: number
+}
 
 export default function Home() {
   const { addToCart } = useCart()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then((res) => res.json())
+      .then((data) => setProducts(data.products))
+      .catch((err) => console.error('Failed to load products:', err))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="py-20 text-center">
+        <p className="font-body text-sm text-text-tertiary">Loading products...</p>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -27,9 +52,8 @@ export default function Home() {
 
       {/* Product grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {MOCK_PRODUCTS.map((product) => {
-          const outOfStock = product.stock === 0 && product.id !== 'prod-5'
-          const isDeskMat = product.id === 'prod-5'
+        {products.map((product) => {
+          const outOfStock = product.stock === 0
 
           return (
             <div
