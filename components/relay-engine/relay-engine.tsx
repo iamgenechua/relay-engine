@@ -7,11 +7,12 @@ import FloatingBubble from '@/components/relay-engine/floating-bubble'
 import ElementSelector from '@/components/relay-engine/element-selector'
 import ChatPanel from '@/components/relay-engine/chat-panel'
 
-type Mode = 'idle' | 'report' | 'chat'
+type Mode = 'idle' | 'report'
 
 export default function RelayEngine() {
   const [mounted, setMounted] = useState(false)
   const [mode, setMode] = useState<Mode>('idle')
+  const [isChatOpen, setIsChatOpen] = useState(false)
   const [elementContext, setElementContext] = useState<{
     elementName: string
     cssSelector: string
@@ -104,7 +105,7 @@ export default function RelayEngine() {
 
       setTimeout(() => {
         setAutoTriggered(true)
-        setMode('chat')
+        setIsChatOpen(true)
         setTimelineEvents(getSessionEvents())
       }, 1500)
     }
@@ -114,20 +115,19 @@ export default function RelayEngine() {
   }, [logEvent, getSessionEvents])
 
   const handleBubbleClick = useCallback(() => {
-    setMode((prev) => {
-      if (prev === 'idle') return 'report'
-      if (prev === 'report') return 'idle'
-      return 'idle'
-    })
-
-    if (mode === 'chat') {
+    if (isChatOpen) {
+      setIsChatOpen(false)
+      setMode('idle')
       setElementContext(null)
       setHasError(false)
       setErrorMessage('')
       setAutoTriggered(false)
       setTimelineEvents([])
+      return
     }
-  }, [mode])
+
+    setMode((prev) => (prev === 'idle' ? 'report' : 'idle'))
+  }, [isChatOpen])
 
   const handleElementSelect = useCallback(
     (context: {
@@ -138,12 +138,13 @@ export default function RelayEngine() {
     }) => {
       setElementContext(context)
       setTimelineEvents(getSessionEvents())
-      setMode('chat')
+      setIsChatOpen(true)
     },
     [getSessionEvents]
   )
 
   const handleChatClose = useCallback(() => {
+    setIsChatOpen(false)
     setMode('idle')
     setElementContext(null)
     setHasError(false)
@@ -166,7 +167,7 @@ export default function RelayEngine() {
         onElementSelect={handleElementSelect}
       />
       <ChatPanel
-        isOpen={mode === 'chat'}
+        isOpen={isChatOpen}
         onClose={handleChatClose}
         elementContext={elementContext}
         timelineEvents={timelineEvents}
