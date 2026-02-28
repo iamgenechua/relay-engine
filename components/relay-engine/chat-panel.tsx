@@ -1,11 +1,12 @@
 'use client'
 
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { TimelineEvent } from '@/lib/types'
+import { posthog } from '@/lib/posthog'
 import EventTimeline from '@/components/relay-engine/event-timeline'
 import ClassificationCard from '@/components/relay-engine/classification-card'
 
@@ -226,6 +227,7 @@ export default function ChatPanel({
         elementContext,
         autoTriggered,
         errorMessage,
+        sessionId: posthog.__loaded ? posthog.get_session_id?.() : undefined,
       },
     }),
   })

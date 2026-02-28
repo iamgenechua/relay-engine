@@ -30,6 +30,17 @@ export function Nav() {
           >
             Orders
           </Link>
+          <Link
+            href="/reports"
+            className={`font-body text-sm font-normal transition-colors ${
+              pathname.startsWith('/reports')
+                ? 'text-text'
+                : 'text-text-tertiary hover:text-text'
+            }`}
+            style={{ letterSpacing: '0.04em' }}
+          >
+            Reports
+          </Link>
           <button
             onClick={openDrawer}
             className="relative font-body text-sm font-normal text-text-tertiary transition-colors hover:text-text"
