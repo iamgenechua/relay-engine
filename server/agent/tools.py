@@ -56,7 +56,9 @@ TOOL_DEFINITIONS = [
             "name": "readSourceFile",
             "description": (
                 "Read a source file from the project. "
-                "Restricted to app/, components/, lib/, and docs/ directories."
+                "Restricted to app/, components/, lib/, docs/, and server/ directories. "
+                "Use this to inspect API routes (app/api/), server actions, "
+                "and backend logic (server/) to diagnose issues."
             ),
             "parameters": {
                 "type": "object",
@@ -132,7 +134,7 @@ TOOL_DEFINITIONS = [
 
 # -- Tool implementations ----------------------------------------------------
 
-ALLOWED_PREFIXES = ("app/", "components/", "lib/", "docs/")
+ALLOWED_PREFIXES = ("app/", "components/", "lib/", "docs/", "server/")
 MAX_FILE_CHARS = 5000
 
 

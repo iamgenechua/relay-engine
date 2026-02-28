@@ -4,7 +4,7 @@ set -euo pipefail
 # Upload source files to the relay-engine server so the agent's
 # readSourceFile tool can access them on Railway.
 
-SERVER="${FDE_URL:-https://relay-engine-production.up.railway.app}"
+SERVER="${FDE_URL:-https://ai-fde-production.up.railway.app}"
 ENDPOINT="${SERVER}/api/codebase/upload"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
