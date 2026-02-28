@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from database import engine, init_db
 from agent import router as fde_router
+from codebase import router as codebase_router
 
 from dotenv import load_dotenv
 
@@ -31,6 +32,7 @@ app.add_middleware(
 )
 
 app.include_router(fde_router)
+app.include_router(codebase_router)
 
 
 @app.get("/health")

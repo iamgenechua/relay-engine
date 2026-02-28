@@ -42,5 +42,4 @@ next-env.d.ts
 
 
 #server
-server/__pycache__/
-server/agent/__pycache__/
+**/__pycache__/*
