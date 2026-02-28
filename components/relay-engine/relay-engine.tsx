@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { TimelineEvent } from '@/lib/types'
-import type { RelayContext } from '@/lib/relay-collector'
-import { sendContext, getSessionId, getDistinctId, capturePageSnapshot } from '@/lib/relay-collector'
 import FloatingBubble from '@/components/relay-engine/floating-bubble'
 import ElementSelector from '@/components/relay-engine/element-selector'
 import ChatPanel from '@/components/relay-engine/chat-panel'
@@ -26,7 +24,6 @@ export default function RelayEngine() {
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([])
 
   const sessionLog = useRef<TimelineEvent[]>([])
-  const sessionStartedAt = useRef(new Date().toISOString())
   const sessionStart = useRef(Date.now())
   const eventCounter = useRef(0)
   const lastTrackedPath = useRef('')
@@ -96,38 +93,6 @@ export default function RelayEngine() {
     return [...sessionLog.current]
   }, [])
 
-  const emitContext = useCallback((
-    trigger: RelayContext['trigger'],
-    elCtx: typeof elementContext,
-    errMsg: string | undefined,
-    autoTrig: boolean,
-  ) => {
-    const ctx: RelayContext = {
-      sessionId: getSessionId(),
-      distinctId: getDistinctId(),
-      sessionStartedAt: sessionStartedAt.current,
-      currentUrl: window.location.href,
-      currentPath: window.location.pathname,
-      userAgent: navigator.userAgent,
-      screenSize: { width: window.innerWidth, height: window.innerHeight },
-      elementContext: elCtx
-        ? {
-            elementName: elCtx.elementName,
-            cssSelector: elCtx.cssSelector,
-            visibleText: elCtx.visibleText,
-            boundingBox: elCtx.boundingBox
-              ? { top: elCtx.boundingBox.top, left: elCtx.boundingBox.left, width: elCtx.boundingBox.width, height: elCtx.boundingBox.height }
-              : null,
-          }
-        : null,
-      errorContext: errMsg ? { message: errMsg, autoTriggered: autoTrig } : null,
-      conversation: [],
-      pageSnapshot: capturePageSnapshot(),
-      trigger,
-    }
-    sendContext(ctx)
-  }, [])
-
   // Listen for error events from the store
   useEffect(() => {
     function handleError(e: Event) {
@@ -141,7 +106,6 @@ export default function RelayEngine() {
         setAutoTriggered(true)
         setMode('chat')
         setTimelineEvents(getSessionEvents())
-        emitContext('error_auto', null, msg, true)
       }, 1500)
     }
 
@@ -175,9 +139,8 @@ export default function RelayEngine() {
       setElementContext(context)
       setTimelineEvents(getSessionEvents())
       setMode('chat')
-      emitContext('element_select', context, undefined, false)
     },
-    [getSessionEvents, emitContext]
+    [getSessionEvents]
   )
 
   const handleChatClose = useCallback(() => {

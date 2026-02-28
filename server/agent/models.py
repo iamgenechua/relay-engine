@@ -6,10 +6,18 @@ from pydantic import BaseModel, Field
 # -- Request schema ----------------------------------------------------------
 
 
+class BoundingBox(BaseModel):
+    top: float = 0
+    left: float = 0
+    width: float = 0
+    height: float = 0
+
+
 class ElementContext(BaseModel):
     elementName: str = ""
     cssSelector: str = ""
     visibleText: str = ""
+    boundingBox: BoundingBox | None = None
 
 
 class LogEntry(BaseModel):
@@ -33,6 +41,8 @@ class FDERequest(BaseModel):
     frontendLogs: list[LogEntry] = Field(default_factory=list)
     backendLogs: list[LogEntry] = Field(default_factory=list)
     codebaseSnapshotPaths: list[str] = Field(default_factory=list)
+    recentEvents: list[dict] = Field(default_factory=list)
+    pageSnapshot: str = ""
 
 
 # -- Report / timeline -------------------------------------------------------
