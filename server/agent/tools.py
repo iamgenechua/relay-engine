@@ -5,6 +5,9 @@ import os
 import httpx
 
 from agent.config import POSTHOG_HOST, POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID, PROJECT_ROOT
+
+# Uploaded codebase lives under data/{project}/frontend/
+CODEBASE_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "relay-engine", "frontend")
 from agent.models import ChatMessage
 from agent.store import add_report
 
@@ -171,23 +174,30 @@ async def readSourceFile(filePath: str) -> dict:
     if not any(normalized.startswith(prefix) for prefix in ALLOWED_PREFIXES):
         return {"content": f"Access denied: only files in {', '.join(ALLOWED_PREFIXES)} are readable."}
 
-    # Path traversal guard
-    absolute = os.path.normpath(os.path.join(PROJECT_ROOT, normalized))
-    if not absolute.startswith(PROJECT_ROOT):
-        return {"content": "Access denied: path traversal detected."}
+    # Try uploaded codebase first, then fall back to PROJECT_ROOT
+    codebase_abs = os.path.abspath(CODEBASE_DIR)
+    for base_dir in [codebase_abs, PROJECT_ROOT]:
+        absolute = os.path.normpath(os.path.join(base_dir, normalized))
+        if not absolute.startswith(base_dir):
+            continue
+        try:
+            with open(absolute, "r", encoding="utf-8") as f:
+                content = f.read()
+            if len(content) > MAX_FILE_CHARS:
+                content = content[:MAX_FILE_CHARS] + "\n\n... (truncated at 5000 chars)"
+            return {"content": content}
+        except FileNotFoundError:
+            continue
 
-    try:
-        with open(absolute, "r", encoding="utf-8") as f:
-            content = f.read()
-        if len(content) > MAX_FILE_CHARS:
-            content = content[:MAX_FILE_CHARS] + "\n\n... (truncated at 5000 chars)"
-        return {"content": content}
-    except FileNotFoundError:
-        return {"content": f"File not found: {filePath}"}
+    return {"content": f"File not found: {filePath}"}
 
 
 async def searchBusinessRules(query: str) -> dict:
-    rules_path = os.path.join(PROJECT_ROOT, "docs", "BUSINESS_RULES.md")
+    # Try uploaded codebase first, then fall back to PROJECT_ROOT
+    codebase_abs = os.path.abspath(CODEBASE_DIR)
+    rules_path = os.path.join(codebase_abs, "docs", "BUSINESS_RULES.md")
+    if not os.path.exists(rules_path):
+        rules_path = os.path.join(PROJECT_ROOT, "docs", "BUSINESS_RULES.md")
     try:
         with open(rules_path, "r", encoding="utf-8") as f:
             content = f.read()

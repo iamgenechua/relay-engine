@@ -160,11 +160,12 @@ function parseClassification(messages: any[]) {
 }
 
 function getMessageText(msg: any): string {
-  if (!msg.parts) return ''
-  return msg.parts
+  if (!msg.parts) return msg.content || ''
+  const text = msg.parts
     .filter((p: any) => p.type === 'text')
     .map((p: any) => p.text)
     .join('')
+  return text || msg.content || ''
 }
 
 function SendIcon() {
@@ -261,6 +262,19 @@ export default function ChatPanel({
   }, [messages, isLoading])
 
   const classification = parseClassification(messages)
+
+  // Debug: log message structure
+  useEffect(() => {
+    if (messages.length > 0) {
+      console.log('[relay] Messages:', JSON.stringify(messages.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: (m as any).content,
+        parts: m.parts,
+        keys: Object.keys(m),
+      })), null, 2))
+    }
+  }, [messages])
 
   const visibleMessages = messages.filter((msg) => {
     const text = getMessageText(msg)
